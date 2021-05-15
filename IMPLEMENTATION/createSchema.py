@@ -1,5 +1,6 @@
 #CREATE THE STRUCTURE OF THE MAIN TABLES OF THE DATABASE
 # import packages
+import pandas as pd
 from sqlalchemy import create_engine
 from psycopg2 import ( 
         connect
@@ -43,8 +44,18 @@ commands = (
                 CONSTRAINT fk_gc
                     FOREIGN KEY(GC_code)
                         REFERENCES gardbage_collector(personal_code)
+                        ON DELETE SET NULL,
         )
-        """
+        """,
+        #table for the registrantion of PA
+        """ 
+            CREATE TABLE pa_user(
+                postal_code VARCHAR(5) PRIMARY KEY,
+                municipality VARCHAR(255) NOT NULL,
+                password VARCHAR(255) NOT NULL  
+        )
+        """,
+        
         )
 
 #create the connection with the database
@@ -55,3 +66,21 @@ for command in commands :
 cur.close()
 conn.commit()
 conn.close()
+
+
+#CREATE THE TABLE CONTAINING A LIST OF MUNICIPALITIES AND THEIR POSTAL CODE
+#this table will be used to verify the correctness of the username during the registration of the PA
+
+#setup db connection (generic connection path to be update with your credentials: 'postgresql://user:password@localhost:5432/mydatabase')
+engine = create_engine('postgresql://postgres:r3df0x@localhost:5432/binecoDB') 
+
+# creating the datafram of the municipalities 
+# data obtained from http://lab.comuni-italiani.it/download/comuni.html
+# !!NOTE: i'm using the municipality of italy because i can't find a list of australian city id
+df_patemp = pd.read_csv("C:/Users/teari/Documents/polimi/semester_2_1/software_engineering/project/listacomuni.txt",sep=';')
+
+#selecting only the usefull columns
+df_pa = df_patemp[['Comune', 'Provincia', 'CAP']]
+
+# write the dataframe into postgreSQL
+df_pa.to_sql('pa_data', engine, if_exists = 'replace', index=False)
