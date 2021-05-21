@@ -59,9 +59,11 @@ def load_logged_in_user():
 def index():
     if load_logged_in_user():
         return render_template('index.html')
-    else:
-        return render_template('about.html')
 
+# the about page to describe our web app
+@app.route('/about',methods=('GET'))
+def about():
+	return render_template('about.html')
 
 # UC.3 Pa enters new data about the bin
 @app.route('/newBin', methods=('GET', 'POST'))
