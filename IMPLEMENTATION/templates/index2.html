@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{%if g.user %}
+{% block header %}
+  <h1>{% block title %}History of the Project{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <label for="username">
+<body bgcolor="#bbd0c9"  font face="Letter Spacing">
+<img src="static/foto1.jpg"
+  style="float:left;margin: 10px" height="430" width="600">
+<p>SE4G WebApp is a project developed by our team as final work of the Software Engineering for Geoinformatics course of the Politecnico di Milano university; our team is composed by: Pileggi Chiara, Pasturensi Martina, Alghisi Marianna e D’Ascoli Gabriele.<br>
+
+<br>Purpose of the project is to show the manipulations applied on the data collected in the Tree Inventory carried between the July 2018 and the June 2019 by a local research team to probe the trees biodiversity present in the city of Winamac, Indiana (USA);  the various plots that are shown inside the sections of the Web App have the purpose to highlight the different aspects e features found in the population.<br>
+
+<br>We hope you will enjoy visiting our Web App and we invite you to leave your feedback, it will help us improve our work even more!
+</div>
+</label>
+  </form>
+{% endblock %}
+{% endif %}
+

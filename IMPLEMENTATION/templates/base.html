@@ -1,0 +1,34 @@
+<!doctype html>
+<head>
+    <title>{% block title %}{% endblock %} - BinEco WebApp</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css')}}">    
+</head>
+<nav>
+  <h1><a href="/index">BinEco</a></h1>
+
+    {% if g.user %}
+      Welcome {{ g.user[1] }}!
+      <ul>
+        <li><a href="/logout">Log Out</a>
+        <li><a href="/map">Interactive map</a>
+        <li><a href="/newBin"> Insert a new bin</a>
+        <li><a href="/updateBin">Update bin</a>
+        <li><a href="/queryData">Query</a>
+      </ul>
+    {% else %}
+  <ul>      
+      <li><a href="/register">Register</a>
+      <li><a href="/login">Log In</a>
+    {% endif %}
+  </ul>
+</nav>
+      <hr>
+<section class = "content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class = "flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>

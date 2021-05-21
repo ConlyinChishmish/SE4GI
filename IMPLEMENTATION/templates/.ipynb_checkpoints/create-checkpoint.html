@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}New bin{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="bin_id"> Bin_id</label>
+    <input name="bin_id" id="bin_id" value="{{ request.form['bin_id'] }}" required>
+    
+    <label for="lon">Longitude</label>
+    <input name="lon" id="lon" value="request.form['lon'] }}" required>
+    
+    <label for="lat">Latitude</label>
+    <input name="lat" id="lat" value="request.form['lat'] }}" required>
+    
+    <label for="infographic">Infographic</label>
+    <input name="infographic" id="infographic" value="request.form['infographic'] }}">
+    
+    <input type="submit" value="Save">
+  </form>
+{% endblock %}
