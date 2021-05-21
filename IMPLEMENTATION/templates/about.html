@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{%if g.user %}
+{% block header %}
+  <h1>{% block title %}BinEco web app{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <label for="username">
+<body bgcolor="#bbd0c9"  font face="Letter Spacing">
+<img src="static/recycle_tree1.jpg"
+  style="float:left;margin: 10px" height="430" width="600">
+<h4> BinEco is a web app that will help you in managing the distribution and organization of the bins in your city.</h4>
+<p> Our app will offer you...</p>
+</div>
+</label>
+  </form>
+{% endblock %}
+{% endif %}
+
