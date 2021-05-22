@@ -94,7 +94,7 @@ engine = create_engine('postgresql://postgres:r3df0x@localhost:5432/binecoDB')
 # !!NOTE: i'm using the municipality of italy because i can't find a list of australian city id
 
 #opening the file and save it in a daframe
-fileTxt = open("data/listacomuni.txt"")
+fileTxt = open("data/listacomuni.txt")
 df_patemp = pd.read_csv(fileTxt,sep=';')
 fileTxt.close()
                
