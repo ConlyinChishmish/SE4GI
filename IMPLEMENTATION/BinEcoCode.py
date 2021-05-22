@@ -13,7 +13,7 @@ from psycopg2 import (
 from shapely.geometry import Point
 
 # Create the application instance
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates", _static_folder ="static")
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
 
