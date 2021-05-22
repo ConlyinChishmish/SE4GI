@@ -133,7 +133,7 @@ data_geodf.to_sql('litter', engine, if_exists = 'replace', index=False)
 # data obtained from OSM
 
 #opening the file and save it in a daframe
-filegeojson = open("data/Waste_basket_Cairns.geojson"")
+filegeojson = open("data/Waste_basket_Cairns.geojson")
 bin_df = gpd.read_file(filegeojson)
 fileTxt.close()
                
