@@ -1,0 +1,1458 @@
+\documentclass[a4paper,11pt]{report}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc} 
+\usepackage[english]{babel} 
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{lipsum}
+\usepackage{tocbibind} 
+\usepackage{booktabs}
+\usepackage{epigraph}
+\usepackage{enumerate} 
+\usepackage{longtable}
+\usepackage{float}
+
+\setcounter{secnumdepth}{3}
+\setcounter{tocdepth}{3}
+
+\begin{document}
+
+\begin{titlepage}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.1mm}}
+
+\center 
+
+\includegraphics[width=50mm,scale=0.5]{Logo_Politecnico_Milano.png}\\[0.5cm] 
+
+{\Large Geoinformatics Engineering}\\[0.4cm] 
+{\large Software Engineering for Geoinformatics}\\[0.4cm] 
+{\large Academic year 2020-2021}\\[0.5cm] 
+
+\HRule \\[1.5 cm]
+{\LARGE Software Design and Test Plan Document} \\[1cm]
+\includegraphics[width=35mm,scale=0.5]{logo.png}\\[1cm] 
+\HRule \\[1.5cm]
+
+\raggedright
+
+\begin{minipage}{0.55\textwidth}
+\begin{flushleft} \large
+\emph{Authors:}\\
+Elisa \textsc{Servidio}\hfill 849417 \\
+Dorotea \textsc{Rigamonti}\hfill 969365 \\
+Mohammad \textsc{Mahdi Safari}\hfill 970076 \\
+Surendhiran \textsc{Sundaraj}\hfill 904909 \\
+\end{flushleft}
+\end{minipage}\\[1 cm]
+~
+
+\center
+
+{\large May 25, 2021}\\[0.3 cm]
+{\large Version 1.0}\\
+
+\vfill 
+\end{titlepage}
+
+\newpage
+
+\addtocontents{toc}{\protect\setcounter{tocdepth}{-1}}
+\tableofcontents
+\addtocontents{toc}{\protect\setcounter{tocdepth}{3}}
+\listoffigures
+\listoftables
+\newpage
+\chapter{Introduction}
+{
+\section{Purpose}
+{
+Our project aims to allow PA to create a modern and efficient information system by the help of the citizens, in order to enter, access, retrieve, analyze, visualize and modify, by means of an interactive mapping tool, the available ERP data of a certain local area.\\
+
+Given data about litter for a certain Public Administration, the main goal is to improve the management of garbage collection in the municipality, for example by putting a bin or an infographic in a critical area (critical areas are found by statistical analysis implemented in the application). A low level goal is to improve the behaviour of people according to the environment and rubbish pollution.\\
+
+The Web App should be accessible through applied technology (Computer or mobile phone).\\
+The Web App should be available 24h/7.\\
+
+More detailed information about the project can be found in the RASD document.\\
+
+The web application will present different kinds of information, both static and dynamic. By static the purpose is to display all of the information that will not change with the user interaction, it will be stored as HTML code and will be served when requested by the client. Dynamic refers to all of the information that the user will be able to interact with and which changes upon request, all of this is developed using Python language.
+}
+
+\section{Software Design Document}
+{
+The Design Document provides a specification on the architecture of BinEco’s system. It is complementary to the Requirements Analysis and Specification Document already presented, and it provides further description on its components, their interactions and the implementation, integration and testing plan.\\
+
+This document will describe the following characteristics of the project:
+\begin {itemize}
+\item \ \textit{Project Database}: Since one of the most important parts of this project is the data management and structure, it is also one of the most complex and composed of several elements. For this reason a detailed explanation of the Database characteristics will be described.
+\item \ \textit{Software Structure}: as it will be specified in this section, the software is structured in a 3-layer architecture which will make possible the interaction between the client and the server taking into consideration the static and dynamic units.
+\item \ \textit{User cases application}: As it can be seen in further detail in the RASD, it can be seen how use cases or requirements map on the components of the software.
+\item \ \textit{Team Organization}: the development team is composed of 4 people, and although each one of the members will participate in building all of the project, it is important to assign roles and activities to each engineer. This will be discussed in this section.
+\item \ \textit{Test Plan}: detailed document that describes the test strategy, objectives and schedule required to perform testing for a software product. Test Plan helps us determine the effort needed to validate the quality of the application under test. 
+\end{itemize}
+The Design Document is connected to the Requirements Analysis Specification Document (RASD) by complying with all the requirements established and in order to avoid missing any important functionality. 
+}
+
+\section{Reference Documents}
+{\begin {itemize}
+\item \ IEEE Std 1471-2000, Recommended Practice for Architectural Description of Software-intensive Systems
+\item \ IEEE 1016-2009, IEEE Standard for Information Technology—Systems Design—Software Design Descriptions
+\end{itemize}
+}
+}
+
+\chapter{BinEco Database}
+{The web app retrieves databases from different external services (which here are Epicollect5, PostgreSQL and OSM) through REST API.\\
+
+Data from Epicollect5 are pre-processed and copied to a PostgreSQL database with a given frequency.\\
+Data about bins’ distribution in a certain locality are retrieved from OSM and copied to a PostgreSQL database referring to a certain municipality.\\
+
+The web app will then interact with DBMS and perform CRUD operations on the PostgreSQL database.\\
+
+The advantages for storing the data in a PostgreSQL database as opposed to fetch them directly from Epicollect5 include: 
+\begin {itemize}
+\item \ to enable verification, pre-processing and storing of consistent data
+\item \ to ensure availability of data, decoupling our web application from EpiCollect5
+\item \ to reduce the risk of data loss
+\item \ to improve performance
+\item \ to leverage DBMS capabilities and, in particular, the interface between Python and PostgreSQL
+\end{itemize}
+
+In this section we describe both the structures of the table fetched from Epicollect5, also referred to as the Litter table, and of those in PostgreSQL. 
+
+
+\section{Epicollect5 Dataset}
+{The dataset of environmental rubbish pollution measurements that will be used in this project comes from Epicollect5 and contains data collected in Australia.\\
+The dataset consists of 58 georeferenced measurement points of ERP geolocalized in the municipalities of Cairns and Townsville.\\
+
+Dataset: 
+{\small{\url{https://five.epicollect.net/project/bineco-web-application/data}}}\\
+
+We retrieved data from an already existing project whose main features are shown in \textit{Table 2.1} and we modified the attributes of the dataset according to the main purpose of our application.\\
+Eventually, we created a new project called \textit{Bineco Web Application} whose main features are summarized in \textit{Table 2.2}.
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Original Epicollect5 project's table}
+\begin{center}
+    \begin{tabular}{|p{4cm}|p{8cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+     Point position & expressed in WGS84 \\
+     \hline
+     Date of creation & expressed in m/dd/yy h:min\\
+     \hline
+     Litter type & general information about material of garbage like metal, plastic, etc. \\
+     \hline
+    Count & number of piece of garbage \\
+    \hline
+    Description (e.g. string) & indication of the type of object \\
+    \hline
+    Brand (e.g. MCDonalds) & information about the brand of the litter\\
+    \hline
+    Litter preservation & general information about the status of preservation of the litter (degraded, slightly worn, pristine) \\
+    \hline
+    Size & three categories based on length of garbage (small, medium, large)\\
+    \hline
+    Type Of Infrastructure &  the type of place where it was found (e.g. picnic table). It helps to reduce the buffer that using GPS implies (GPS provides geographical coordinates that are not necessarily so precise))\\
+    \hline
+     Comment & section not mandatory to be filled in\\
+    \hline
+    Photo & a photo of the piece of garbage\\
+    \hline
+    \end{tabular}   
+\end{center}
+\end{table}\\
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Bineco Web Application project's table}
+\begin{center}
+    \begin{tabular}{|p{4cm}|p{8cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+     Point position & expressed in WGS84 \\
+     \hline
+     Date of creation & expressed in m/dd/yyyy\\
+     \hline
+     Time of creation & expressed in h:min:sec\\
+     \hline
+     Litter type & general information about material of garbage like metal, plastic, etc. \\
+     \hline
+    Quantity & general quantity of litter (low/medium/high) \\
+    \hline
+    Type Of Infrastructure &  the type of place where it was found (e.g. picnic table). It helps to reduce the buffer that using GPS implies (GPS provides geographical coordinates that are not necessarily so precise))\\
+    \hline
+    Comment & section not mandatory to be filled in \\
+    \hline
+    Photo & a photo of the piece of garbage\\
+    \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+
+Instead of counting litter Citizens (who are the users in charge to collect data) will have to enter a general quantity. This will make them much more willing to collect data due to the fact that it will take less time to do it.
+
+Description, brand, litter preservation and size attributes are no longer useful for our web application given that they don’t provide any valuable piece of information to the PA according to the purpose of our project. \\
+
+Additional fields generated automatically by EpiCollect5 when the user uploads a data entry include: 
+\begin {itemize}
+\item \ EpiCollect5 unique ID
+\item \ creation date and time
+\item \ upload date and time
+\end{itemize}
+
+
+Even if the creation date and time are automatically generated by Epicollect5, we had to add the attributes
+\begin {itemize}
+\item \ Date of creation
+\item \ Time of creation
+\end{itemize}
+
+to simulate Citizens collecting data over an entire month in the past. This mechanism allows us to make statistical analysis which exploit data collected in a certain amount of time.
+}
+
+\section{PostgreSQL - PostGIS Database}
+{The web application running on the WSGI server will interact with a DBMS for data storing and management. The DBMS of the web application is PostgreSQL 13 DBMS that works on the local machine. \\
+
+PostgreSQL is a free and open-source DBMS emphasizing extensibility and SQL compliance, and to leverage database adapters for Python programming language, for example psycopg2.\\
+
+Moreover, PostgreSQL provides useful extensions depending on the specific nature of data.
+Given that data entries are georeferenced we have decided to exploit PostgreSQL’s extension PostGIS, an open source software program that adds support for geographic objects to the PostgreSQL object-relational database.\\ 
+ 
+The PostgreSQL - PostGIS database will be composed by data organized in tables with primary keys which are unique identifiers, those elements that allow us to identify a specific piece of data without any ambiguity.  Data are logically related even from a practical point of view by usage of specific identifiers that occur in more than one table as follow:\\
+
+\begin{figure}[h!] 
+\begin{center} 
+  \includegraphics[width=14cm]{ER.jpeg}\\ 
+  \caption{Entity Relationship Diagram} 
+\end{center} 
+\end{figure}
+\newpage
+BinEco data tables specifications are reported in the next pages.
+\newpage
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Litter table}
+\begin{center}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+     ec5\_uuid & integer value uniquely identifying the entry. This will be also the table key value \\
+     \hline
+     1\_Date\_of creation & class datetime.date variable representing the date of the entry\\
+     \hline
+     2\_Time\_of creation & class datetime.time variable representing the time of the entry\\
+     \hline
+    3\_Position.latitude & float value representing the geodetic Latitude (in degrees) of surveyed point\\
+    \hline
+    3\_Position.longitude & float value representing the geodetic Longitude (in degrees) of surveyed  point\\
+    \hline
+    3\_Position.accuracy & float value representing the UTM projected East coordinate (in meter)\\
+    \hline
+3\_Position.UTM\_easting & float value representing the UTM projected East coordinate (in meter)\\
+    \hline
+    3\_Position.UTM\_northing & float value representing the UTM projected North coordinate (in meter)\\
+    \hline
+    3\_Position.UTM\_zone & string value representing the UTM zone of the projected coordinates reference system\\
+    \hline
+    4\_Litter\_type & enumeration (plastic, glass,...) \\
+    \hline
+    5\_Quantity & enumeration  (low, medium, high) \\
+    \hline
+    6\_Type\_of\_infrastructure & enumeration type (picnic table, bin..)\\
+    \hline
+    7\_Comment & string value \\
+    \hline
+    8\_Photo & \\
+    \hline
+    geom & a PostGIS geometrical attribute, of type POINT, containing the geodetic coordinates (Lon., Lat.) of the surveyed point\\
+    \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+
+\newpage
+Bins' distribution table stores information about the bin creation, its position and the infographic updates. It refers to a certain municipality for which we retrieve data from OSM through API to make our application help PA in the decision making process.
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Bins' distribution table}
+\begin{center}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+    bin\_ID & integer value uniquely identifying the bin. This will be also the table key value \\
+     \hline
+     bin\_date & class datetime.date variable representing the date of the bin installation\\
+     \hline
+     lat & float value representing the geodetic Latitude (in degrees) of surveyed point\\
+     \hline
+    lon & float value representing the geodetic Longitude (in degrees) of surveyed point\\
+    \hline
+    infographic & boolean variable representing the presence or not of an infographic\\
+    \hline
+    infographic\_date & class datetime.date variable representing the date of the infographic installation\\
+    \hline
+    geom & a PostGIS geometrical attribute, of type POINT, containing the geodetic coordinates (Lon., Lat.) of the surveyed point\\
+\hline
+    buffer & a PostGIS geometrical attribute of type POLYGON\\
+    \hline
+    \end{tabular}   
+\end{center}
+\end{table}\\
+\newpage
+PA users table contains the system users’ information needed for registration and login.
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{PA users table}
+\begin{center}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+    postcode & string value uniquely identifying the PA. This will be also the table key value \\
+     \hline
+     municipality & string value representing the name of the municipality of PA\\
+     \hline
+     password & string value representing the password of the PA user account\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}\\
+
+PA postcodes table allows BinEco system to check if registration or login is made correctly by PA.
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{PA postcodes table }
+\begin{center}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+    id & integer value uniquely identifying the municipality. This will be also the table key value \\
+     \hline
+     postcode & string value uniquely identifying a municipality\\
+     \hline
+     locality & string value representing the name of the municipality\\
+     \hline
+    state & string value representing the abbreviation of states \\
+     \hline
+     lat & float value representing the geodetic Latitude (in degrees) of surveyed point\\
+     \hline
+     long & float value representing the geodetic Longitude (in degrees) of surveyed  point\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}\\
+
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Comment's table}
+\begin{center}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    \textbf{Attribute} & \textbf{Description}\\
+    \hline
+    user\_id & string value uniquely identifying the PA. This will be also the table key value \\
+     \hline
+    comment\_id & string value uniquely identifying the comment\\
+ \hline
+    entry\_date & class datetime.date variable representing the date of the creation of the comment\\
+     \hline
+    title & string value representing the title of the comment \\
+     \hline
+    body & string value representing the body of the comment\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+}
+}
+
+\chapter{Software Structure}
+{The software’s architecture defines its organization in terms of components and connectors.\\
+
+BinEco software’s architecture will consist of a 3-layer system composed of a Web Server (HTTP Server), Logical Server (Application Server) and Database Server.\\
+
+The software is divided into two independent programs: 
+\begin{itemize}
+    \item database configuration script in charge of creating the structure of the database
+    \item the flask application script in charge of managing:
+    \begin{itemize}
+        \item the template engine
+        \item the python code which provide all the logical operations that will be needed in order to fulfil the software requirements
+    \end{itemize}
+\end{itemize}
+
+\section{Database configuration} 
+{
+Business logic relies on a database server where data are stored persistently and manipulates them, making them available for the client. The WGSI server connects to this database.\\
+
+BinEco application will interact with the DBMS of PostgreSQL by using the libraries:
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Libraries and Functions imported for Database Configuration}
+\begin{center}
+    \begin{tabular}{|p{2.5cm}|p{2.5cm}|p{6.5cm}|}
+    \hline
+    \textbf{Library} & \textbf{Function} & \textbf{Description}\\ 
+     \hline
+     psycopg2 & connect & creates a new database session and returns a new instance of the connection class\\
+     \hline
+     sqlalchemy & create\_engine & produces an Engine object based on a URL\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+ 
+\newpage 
+The main operations for interacting with a DBMS are:
+\begin{itemize}
+    \item Opening a connection with the server
+    \item Sending the request to execute a SQL command
+    \item Sending the request to commit any change 
+    \item Closing the connection
+\end{itemize}
+
+
+\subsection{Data Preprocessing}
+BinEco script for the database configuration is in charge of retrieving and preprocessing the initial data which are going to be stored in the database.\\
+
+The main libraries to preprocess data are:
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Libraries imported for Data Preprocessing}
+\begin{center}
+    \begin{tabular}{|p{3cm}|p{8.5cm}|}
+    \hline
+    \textbf{Library} & \textbf{Description}\\ 
+     \hline
+     requests & allows you to send HTTP requests using Python \\
+     \hline
+     json & used to encode the raw response text into a JSON variable \\
+     \hline
+    pandas & it offers data structures and operations for manipulating numerical tables and time series\\ 
+     \hline
+     geopandas & used to create geodataframe of the data retrieved \\
+     \hline
+     shapely.wkb & used to convert into WKB format the geometry column \\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+
+\newpage
+{
+\subsubsection{Epicollect5 litter dataset}
+{
+\begin{enumerate}
+    \item Data are retrieved from Epicollect5 through REST API provided by the web service, sending it a request.  To do this, Requests library is needed.
+    \item raw data are converted into a json file
+    \item Data are transformed into a Pandas DataFrame.
+    \item A new GeoDataFrame is created by adding a new geometry attribute of Point-type to the DataFrame. A GeoDataFrame object is a DataFrame that has a column with geometry, then the GeoData are saved in the variable.
+\end{enumerate}
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Epicollect5 litter dataset preprocessing specification}
+\begin{center}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+    Used libraries & Pandas\\ 
+    & GeoPandas\\
+    & Requests\\ 
+    & JSON \\
+     \hline
+     Inputs & URL of EpiCollect5 REST API\\
+    & List of attributes of EpiCollect5 dataset that are relevant for this app and will be stored in the DataFrame \\
+     \hline
+     Output & GeoPandas GeoDataFrame that contains data previously retrieved from EpiCollect5\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+\newpage
+}
+\subsubsection{Municipalities' postcodes dataset}
+{
+\begin{enumerate}
+    \item Data are retrieved from\\
+\url{https://www.matthewproctor.com/australian_postcodes}\\
+in .cvs format and saved in the folder ‘data’  attached to the software.
+    \item Data are directly saved into a pandas dataframe.
+\end{enumerate}
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Municipalities' postcodes dataset preprocessing specification}
+\begin{center}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+    Used libraries & Pandas\\ 
+     \hline
+     Inputs & df\_australia\_postcode.csv\\
+    & List of attributes of the dataset that are relevant for this app and will be stored in the DataFrame \\
+     \hline
+     Output & Pandas DataFrame that contains preprocessed municipalities postcodes data\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+\newpage
+}
+\subsubsection{Bins' distribution dataset}
+{
+\begin{enumerate}
+    \item Bins's distribution data are retrieved in geojson format from OSM by using QuickOSM in Qgis/using the osm api Overpass and we store it in the ‘data’ folder.
+    \item The geojson file is directly assigned to a geopandas dataframe from which we extract and create all the attributes needed to fulfill the table of the bin.
+    \item The geometry column is converted into WKB format because is faster to be stored.
+\end{enumerate}
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Bins' distribution dataset preprocessing specification}
+\begin{center}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+    Used libraries & geopandas\\
+    & shapely.wkb\\ 
+     \hline
+     Inputs & Waste\_basket\_Cairns.geojson\\
+    & Waste\_basket\_Townsville.geojson\\
+    & List of attributes of the dataset that are relevant for this app and will be stored in the GeoDataFrame\\
+     \hline
+     Output & GeoPandas DataFrame that contains preprocessed bins distribution data\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+}
+}
+\subsection{Data import into PostgreSQL}
+{
+Once data are preprocessed, they are imported to PostgreSQL database tables.\\
+
+An engine or a connection is set up for managing interaction with the DBMS.
+Once the application runs for the first time new table are created in PostrgreSQL DB and data are copied into the corresponding tables.\\
+
+Once data previously retrieved from Epicollect5 are copied and stored in the corresponding PostgreSQL DB table, if any new entry is found in the dataset from Epicollect, it will be automatically appended to the PostgreSQL DB table.\\ 
+
+The main characteristics of Data import into PostgreSQL are described in the table below:
+
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{Data import into PostgreSQL specification}
+\begin{center}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+    Used libraries & sqlalchemy\\
+    & Psycopg2\\
+    & geopandas\\
+     \hline
+     Inputs & GeoPandas GeoDataFrame containing the preprocessed data\\
+    &Parameters (database name, user, password, etc.) to connect to the DBMS\\
+     \hline
+     Output & PostgreSQL-PostGIS database table with varchar, numerical, boolean and geometry attributes\\
+     \hline
+    \end{tabular}   
+\end{center}
+\end{table}
+}
+}
+}
+\section{Flask application}
+{
+FLASK is a set of Python’s libraries that allows us to build a web application that will be running in the context of a WSGI server.\\ 
+It is classified as a microframework which means that, compared to other approaches, is simpler because it contains only the necessary tools that are strictly needed to support us in the interaction with WSGI server.\\
+
+The Flask application includes the template part and the Python part. 
+The application server will provide all the logical operations that will be needed in order to fulfil the software requirements. 
+We can write business logic of a web server using Python, relying on the standard WSGI which our web server must know in order to be able to execute Python code. \\
+
+The Web browser interacts with the Web server. Python web application will be running in the context of WSGI. The interaction between WSGI server and Web server is defined according to WSGI specification.\\
+
+In the next sections we will describe all the principal logical functions and the interactions between the various components.
+
+\subsection{Python Code}
+{Purpose of the Python code is to answer all the requests coming from the user through the web server, with whom it interfaces through the WSGI, to collect inside all the available functions and recover all the data needed by the database server. \\
+
+\begin{longtable}{|p{3.25cm}|p{4.25cm}|p{4.5cm}|}
+\caption{Libraries and Functions for implementation of Python Code}\\
+\hline
+\endfirsthead
+\endfoot
+\endfoot
+\endhead
+\hline
+\endlastfoot
+\hline 
+\textbf{Library} & \textbf{Function} & \textbf{Description}\\ 
+     \hline
+     flask & Flask & creates an application instance \\
+    \cline{2-3}
+           & Render\_template() & Helper function that allows use of the JINJA template engine \\
+\cline{2-3}
+           & Request & \\
+\cline{2-3}
+           & Redirect & Returns a response object (a WSGI application) that, if called, redirects the client to the target location\\
+\cline{2-3}
+           & url\_for() & Generates a URL to the given endpoint with the method provided \\
+\cline{2-3}
+           & flash() & Flashes a message to the next request. In order to remove the flashed message from the session and to display it to the user, the template has to call get\_flashed\_messages()\\
+\cline{2-3}
+           & session &\\
+\cline{2-3}
+           & g & It is a global namespace for holding any data during a single app context\\
+\cline{2-3}
+           & Abort & to abort a request early with an error code\\
+     \hline
+    psycopg2 & connect &\\
+     \hline
+    werkzeug.security & check\_password\_hash & This allows us to check whether the password provided matched the hashed\_value that is stored in the DB\\
+\cline{2-3}
+                      & generate\_password\_hash & This allows us to store hashed values of passwords in the database, instead of storing them in clear \\
+    \hline
+    werkzeug.exceptions & abort & This function is used to terminate the process if a certain condition is met, it returns the chosen HTTP error \\
+     \hline
+    shapely.geometry & point, polygon & create geometric objects\\
+    \hline
+    geopandas & used to create geodataframe of the data retrieved &\\
+     \hline
+    pandas & it offers data structures and operations for manipulating numerical tables and time series &\\
+     \hline
+    seaborn & statistical data visualization library &\\
+     \hline
+     bokeh & server\_document & functions for embedding Bokeh standalone and server content in web pages\\ 
+\cline{2-3}
+    & subprocess &  to allows the bokeh app running on port 5006 to be accessed by Flask at port 5000 \\
+     \hline
+\end{longtable}
+
+Once all the packages and module are imported, we create a global array which contains three different constant values corresponding to three different thresholds. In our app logic are present all the functions defined for each use case and need that the user can request in his session. First there is the creation of the application instance through the Flask function, to which we pass as argument the name and the template folder that we have implemented for our app; so we set a secret key to some random bytes. \\
+
+Then we define all the functions necessary for the implementation of our application.
+
+\subsubsection{Functions}
+{
+\paragraph{Database connection functions}
+{\begin{itemize}
+    \item \textbf{get\_dbConn}: if we are not connected yet, we pass to the function the .txt file of our DB configuration containing dbname, username and password, the function reads (\textit{readline}) the text, saves the string and connects with our db 
+    \item \textbf{close\_dbConn}: if connected, the function disconnects from our db, closing the connection and removing the attribute (\textit{pop})
+\end{itemize}
+
+For each of the functions present in the code which fall in cases in which the is the user that can do a request to the server, we preliminary declare the \textit{@app.route} to map the specific URL with the associated function that is intended to perform some task; with \textit{@app.route(‘/’)} we create a URL route in our application and if we visit the particular URL mapped to some particular function, the output of that function is rendered on the browser’s screen; \textit{route()} decorator tell Flask what URL should trigger our function.\\
+
+By default a route only answers to GET requests, so in order to the function we are implementing and the case we are in we use the methods argument of the route decorator to handle different HTTP methods (GET, POST, if present in the template).\\
+}
+
+\paragraph{Registration function: \textit{register()}}
+{
+\begin{center}
+\begin{table}[h!]
+\renewcommand\arraystretch{1.5}
+\caption{\textit{register()} function\\}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+   Used libraries & \textbf{flask}: \textit{redirect()}, \textit{flash(error)}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \cline{2-2}
+    & \textbf{werkzeug.security}: \textit{generate\_password\_hash()} \\
+    \cline{2-2}
+    & \textbf{psycopg2}: \textit{fetchone()}, \textit{close()}, \textit{cursor()}, \textit{esecute()}, \textit{commit()} \\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+    \hline
+    What it does & it is in charge of connecting to the page of the registration, taking the entries of a new user and in case of correctness of the inputs, connects to the database and creates a new entry. Then redirects to the login.html page. Otherwise it shows an error message and redirects to the register.html page. if the user is already present in the database, it redirects him/her to the login.html page\\
+     \hline
+    \end{tabular}  
+\end{table}
+\end{center}
+}
+
+\paragraph{Login function: \textit{login()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{login()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+   Used libraries & \textbf{flask}: \textit{redirect()}, \textit{flash(error)}, \textit{url\_for()}, \textit{render.template()}, \textit{request}, \textit{session}\\
+    \cline{2-2}
+    & \textbf{werkzeug.security}: \textit{check\_password\_hash()} \\
+    \cline{2-2}
+    & \textbf{psycopg2}: \textit{fetchone()}, \textit{close()}, \textit{cursor()}, \textit{esecute()}, \textit{commit()} \\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+    \hline
+    What it does & It is in charge of connecting to the \textit{login.html} page, taking the entries of a user and in case of correctness of the inputs create a new session and  connect to the \textit{index.html} page. Otherwise it shows an error message and redirects to the \textit{index.html} page\\
+     \hline
+    \end{tabular}
+\end{table}
+\end{center}
+}
+
+\paragraph{Logout function: \textit{logout()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{logout()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+   Used libraries & \textbf{flask}: \textit{session.clear, \textit{g}, \textit{redirect()}, \textit{url\_for()} }\\
+    \hline
+    What it does & close the session and redirect to the \textit{about.html} page\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+\newpage
+
+\paragraph{Cookies function: \textit{load\_logged\_in\_user()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{load\_logged\_in\_user()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{flask}: \textit{session.clear()}, \textit{g}, \textit{redirect()},  \textit{url\_for()} \\
+    \cline{2-2}
+    & \textbf{psycopg2}: \textit{fetchone()}, \textit{close()}, \textit{cursor()}, \textit{esecute()} \\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+    \hline
+    What it does & It is in charge of verifying and memorizing the presence of a logged user in the website. 
+It get the \textit{use.id} of the session
+if it is \textit{none} set the global variable \textit{g.user} to \textit{nan} and return \textit{false};
+if it is not \textit{nan}, it set the global variable \textit{g.user} to the value in the database and return \textit{true} \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+
+\paragraph{Create the customized home page function: \textit{index()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{index()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{flask}: \textit{render.template()}\\
+    \hline
+    Used functions & \textit{load\_logged\_in\_user()}\\
+    \hline
+    What it does & It is in charge of connecting to the \textit{index.html} page if the user is logged, otherwise it connects to the \textit{about.html} page\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+\newpage
+\paragraph{Select temporal window: \textit{query\_temp()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{query\_temp()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}} \\
+\cline{2-2}
+    & \textbf{geopandas}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}, \textit{now()}\\
+\hline
+    Output & new geodataframe\\
+    \hline
+    What it does & it is in charge of creating a new geodataframe considering a certain time lapse. The temporal window  is defined starting from the day when calling the function considering the previous 30 days. \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+
+\paragraph{Query data by area: \textit{queryByArea()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{queryByArea()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}} \\
+\cline{2-2}
+    & \textbf{geopandas}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+\hline
+   Input & a specific area polygon type\\
+    \hline
+    Output & new geodataframe\\
+    \hline
+    What it does & create a new dataframe by selecting all the raw where the geometry type point is contained in the input area. \\
+     \hline
+    \end{tabular}  
+\end{table}
+\end{center}
+}
+
+\newpage
+\paragraph{Data statistical analysis function: \textit{analysis()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{analysis()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+\hline
+ Used libraries & \textbf{NumPy}\\
+\cline{2-2}
+& \textbf{geopandas}\\
+    \hline
+    Used functions & \textit{queryByArea()}\\
+\hline
+ Input & a specific area polygon type\\
+\cline{2-2}
+    & id\_bin\\
+\cline{2-2}
+    & global array with constant variables corresponding to thresholds\\
+    \hline
+    Output & boolean value\\
+\cline{2-2}
+& array with absolute frequency of the different quantity values (low, medium, high)\\
+    \hline
+  What it does & starting from the points selected by the \textit{query\_temp()} function, it computes the absolute frequency on a specific set of points of litter extracted by using a specific area.
+If the id of the bin belongs to area (if \textit{id\_bin} is not \textit{none})
+\begin{itemize}
+    \item if the computed values overcome the correspondent threshold the boolean variable is set to true
+    \item otherwise returns the array of statistics
+\end{itemize}
+ \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+\newpage
+\paragraph{Update a bin with infographic function: \textit{update\_bin()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{update\_bin()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{fetchone()}, \textit{cursor()}, \textit{execute(), \textit{commit()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+\hline
+    Input & ID of the bin (on the click of the map)\\
+    \hline
+Output & message that the operation is done\\
+\hline
+    What it does & it is in charge of connecting to the \textit{updateBin.html} page.
+If the user is logged, the function takes the new information about the bin infographic. In case of correctness of the inputs, it connects to the dataset and updates the raw. Then redirect to the \textit{index.html} page.
+if the user is not logged in it shows an error message and redirects to the \textit{login.html} page. \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+
+\paragraph{Visualize statystical analysis result function: \textit{visualize\_result()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{visualize\_result()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{matplotlib}\\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{analysis()}\\
+\hline
+Input & area(selected by the user on the interactive map), thresholds\\
+    \hline
+    Output & histogram plot\\
+    \hline
+    What it does & given a selected area and the threshold, allows the user to visualize an histogram that helps the user in the decision making process of putting a new bin\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+
+\paragraph{Data interactive visualization function: \textit{interactive\_map()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{interactive\_map()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+\cline{2-2}
+    & \textbf{bokeh}\\
+    \hline
+    Used functions & \textit{query\_temp()}, \textit{analysis()}, \textit{get\_dbConn()}, \textit{update\_bin()}, \textit{visualize\_result()}\\
+\hline
+    Output & interactive map\\
+    \hline
+    What it does & it allows the user to access the visualization processed data customized with some statistical analysis and interact with the map and data on it. \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+
+\paragraph{Insert a new bin function: \textit{new\_bin()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{new\_bin()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}, \textit{load\_logged\_in\_user()}\\
+\hline
+    What it does & it is in charge of connecting to the \textit{newBin.html} page. Check if the user is logged in.
+If yes, it takes the entries of a new bin and in case of correctness of the inputs connect to the dataset and create a new entry. Then redirect to the \textit{index.html} page. 
+Otherwise it shows an error message and redirects to the login.html page \\
+     \hline
+    \end{tabular} 
+\end{table}
+\end{center}
+}
+\newpage
+\paragraph{Create the ‘homepage’ function for the comment section: \textit{help\_us()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{help\_us()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+\hline
+    What it does & it is in charge of connecting to the \textit{help\_us/index.html} page showing all the comments of the users which it retrieves by connecting to the database. \\
+     \hline
+    \end{tabular}  
+\end{table}
+\end{center}
+}
+
+\paragraph{Leave a comment function: \textit{add\_comment()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{add\_comment()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}, \textit{load\_logged\_in\_user()}\\
+\hline
+    What it does & it is in charge of connecting to the \textit{help\_us/add\_comm.html} page. Check if the user is logged in.
+If yes, it takes the entries of a new post and in case of correctness of the inputs connect to the dataset and create a new entry. Then redirect to the \textit{help\_us.html} page. Otherwise shows an error message and redirect to the page \textit{help\_us/add\_comm.html}
+if no, it shows an error message and redirects to the \textit{login.html} page \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+\newpage
+\paragraph{Request information about a comment: \textit{get\_comment()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{get\_comment()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}} \\
+    \hline
+    Input & the id of a comment\\
+\hline
+    What it does & given the id, if a post associated exist and the user(saved in the global variable) is the author, then it get all the information about the comment and return the comment
+otherwise shows an error message
+ \\
+     \hline
+    \end{tabular} 
+\end{table}
+\end{center}
+}
+
+\paragraph{Delete comment function: \textit{delete\_comment()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{delete\_comment()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+   Used libraries & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}\\
+\hline
+   Input & Id of a comment\\
+    \hline
+    What it does & given the id of a comment, connect to the database and delete the correspondent raw \\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}
+}
+\newpage
+\paragraph{Update comment function: \textit{update\_comment()}}
+{
+\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textit{update\_comment()} function}
+    \begin{tabular}{|p{2.5cm}|p{9.5cm}|}
+    \hline
+ Used libraries & \textbf{psycopg2}: \textit{close()}, \textit{cursor()}, \textit{execute(), \textit{commit()}, \textit{fetchone()}}, \textit{abort()}} \\
+\cline{2-2}
+    & \textbf{flask}: \textit{redirect()}, \textit{flash()}, \textit{url\_for()}, \textit{render.template()}, \textit{request}\\
+    \hline
+    Used functions & \textit{get\_dbConn()}, \textit{load\_logged\_in\_user()}, \textit{get\_comment()}\\
+\hline
+    Input & the id of a comment\\
+    \hline
+    What it does & given the id of a comment, checks if the user is logged in
+if yes,  it retrieves from the database all the info about a comment with \textit{get\_comment()}
+in the get method it connects to the \textit{help\_us/update\_comm.html} page with the past info about the post
+in the post method it asks the user to insert new data and if they are all correct connect to the database and update it then redirect to \textit{help\_us.html} page
+otherwise shows an error message and redirect to the page \textit{help\_us/update\_comm.html}
+if no, it shows an error message and redirects to the \textit{login.html} page \\
+     \hline
+    \end{tabular} 
+\end{table}
+\end{center}
+}
+}
+\subsection{Template Engine}
+{Purpose of the template engine is to generate desired content types, such as HTML, while using some of the data and programming constructs such as conditionals and for loops to manipulate the output. Template files that are created by developers and then processed by the template engine consist of prewritten markup and template tag blocks where data is inserted.
+
+\subsubsection{Jinja template engine}
+{
+The web application mainly uses HTML to display information for the clients, so for this purpose we have to integrate codes in HTML files. JINJA Engine is a component that can be integrated within the context of Flask application, that receives as input a template that defines the structure of a Web Page and some specific values that need to be incorporated in that page and provides as an output the html document completed with the values that are given as input.\\
+
+A template defines the structure of our html Page and is a file containing variables and expressions that are replaced with values when the template is rendered. At the time of the creation, we don’t know exactly what the values will be. At run time JINJA engine is called by our Flask application, the template and the values are passed to JINJA Engine and then the html page is generated. 
+Templates won’t execute without an app (Flask application) to serve them. The templates control the overall look and layout of a site.\\
+
+\begin{itemize}
+    \item \textbf{base.html}: it is considered as a main structure that points to all others. In the language of JINJA engine the \textbf{base.html} is referred to as a parent. it will display the main layout of the web application and all the components
+    \item \textbf{about.html}: the starting page for the users which are not logged in. it shows information about the web app, what it does and to join the project.
+    \item \textbf{index.html}: It is the user home page of the web Application where users (registered and logged in) can see the information about the web app
+    \item \textbf{register.html}: Users use this form to register themselves into the Web Application by providing their Data such as Username, Municipality, and Password.
+    \item \textbf{login.html}: Registered users use this form to log-in with their credentials.
+    \item \textbf{newBin.html}: allows the user to insert a new entry in the bin table
+    \item \textbf{updateBin.html}: allows the user to update the infographic attribute of the bin table
+    \item \textbf{interactive\_map.html}: allows the user to visualize data on an interactive map and interact with the objects present in it
+    \item \textbf{visualize\_results.html}: allows the user to visualize an histogram with the result of a statistical analysis
+    \item \textbf{help\_us/index\_comm.html}: allows to visualize the page with all the comment and leave  new one
+    \item \textbf{help\_us/add\_comm.html}: Users use this form to create a new comment
+    \item \textbf{help\_us/update\_comm.html}: Users use this form to update a specific comment which means edit it or delete it
+
+\end{itemize}
+}
+
+\subsubsection{Css}
+{
+Cascading Style Sheets (CSS) is a style sheet language used for describing the presentation of a document written in a markup Language like HTML. 
+CSS code manages the style and the appearance of the template web pages. 
+}
+}
+}
+}
+\chapter{Use Cases Application}
+{
+\section{UC1 \textit{PA registration}}
+{\begin{itemize}
+    \item \textbf{@app.route('/register', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item Get the information sent by the user client (name of the municipality, username and password)
+            \item Check if the username exists in the municipalities' postcode database
+            \item If not, check if the username and the municipality correspond
+            \begin{itemize}
+                \item if yes accept the new registration and direct the user on the login page
+                \item if not, send an error message to the user 
+            \end{itemize}
+            \item If yes, send an error message to the user
+        \end{itemize}
+        \item On GET, it has to send the user on the registration page
+    \end{itemize}
+\end{itemize}}
+\section{UC2 \textit{PA logs in}}
+{\begin{itemize}
+    \item \textbf{@app.route('/login', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item Get the information sent by the user client (username and password)
+            \item Check if the username exists in the database
+            \item If not, send an error message to the user
+            \item If yes, store the user\_id in the session variable
+        \end{itemize}
+        \item On GET, it has to send the user on the login page
+    \end{itemize}
+\end{itemize}}
+\section{UC3 \textit{PA enters new bin data}}
+{\begin{itemize}
+    \item \textbf{@app.route('/newBin', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item Get the information sent by the user client(ID of the bin, Lat, Lon)
+            \item Check if it already exists in the database
+            \item If not, call the function to update the database
+            \item If yes,send an error message to the user
+        \end{itemize}
+        \item On GET, it has to send the user on the newBin page
+    \end{itemize}
+\end{itemize}}
+\section{UC4 \textit{PA visualize data on interactive map}}
+{\begin{itemize}
+    \item \textbf{@app.route('/Map', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item 
+        \end{itemize}
+        \item On GET, it has to send the user on the popup “page” of the selected point
+    \end{itemize}
+\end{itemize}}
+\section{UC5 \textit{PA requests information about data}}
+{\begin{itemize}
+    \item \textbf{@app.route('/Map/popup', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item Get the information sent by the user client (click on one point)
+        \end{itemize}
+        \item On GET, it has to send the user on the popup “page” of the selected point
+    \end{itemize}
+\end{itemize}}
+\section{UC6 \textit{PA updates infographic}}
+{\begin{itemize}
+    \item \textbf{@app.route('/updateBin', methods=('GET', 'POST'))}
+    \item The function must answer to two HTTP requests
+    \begin{itemize}
+        \item On POST, it has to
+        \begin{itemize}
+            \item Get the information sent by the user client(1 in the infographic attributes)
+            \item Check if it has the same value in the database
+            \item If not, call the function to update the database and send a message when done
+            \item If yes,send an error message to the user
+        \end{itemize}
+        \item On GET, it has to send the user on the updateBin page
+    \end{itemize}
+\end{itemize}}
+\section{UC7 \textit{PA visualizes statistical analysis results}}
+{}
+\section{UC8 \textit{PA adds a comment}}
+{}
+\section{UC9 \textit{PA deletes a comment}}
+{}
+\section{UC10 \textit{PA updates a comment}}
+{}
+\section{UC11 \textit{PA logs out}}
+{}
+}
+
+\chapter{Team Organization}
+{}
+
+\chapter{Test Plan}
+{
+\section{Scope}
+{This test is only a functional testing, more precisely a API test with which we are going to test all the functions present in the application.
+Out of scope items are Database testing, hardware and any other external interface.
+}
+
+\section{Test Cases}
+{
+\subsection{UC1 \textit{PA registration}}
+{
+\subsubsection{TC1 \textit{Correspondent locality and postcode}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC1} - \textit{TC1}: Correspondent locality and postcode}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    Inputs & user accesses to the registration page and inserts:\\
+    & postcode: 4870 \\
+ & municipality: Cairns\\
+ & password: yy3322yy\\
+\hline
+    Hypothesis & 4870 postcode exists in the system\\
+    & Cairns is the correspondent city\\
+ \hline
+    Expected results & the system brings the user in the login page\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+\newpage
+\subsubsection{TC2 \textit{Postcode doesn't exist}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC1} - \textit{TC2}: Postcode doesn't exist}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+ Inputs & user accesses to the registration page and inserts:\\
+    & postcode: 12345667  \\
+ & municipality: Sydney\\
+ & password: yy3322yy\\
+\hline
+    Hypothesis & 12345667 postcode does not exist in the system\\
+ \hline
+    Expected results & the system informs the user that the postal code or municipality is incorrect\\
+     \hline
+    \end{tabular} 
+\end{table}
+\end{center}}
+
+
+\subsubsection{TC3 \textit{Wrong post\_code or password}}
+{{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC1} - \textit{TC3}: Wrong post\_code or password}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+   Inputs & user accesses to the registration page and inserts:\\
+  & postcode: 4870 \\
+   & municipality: Sydney\\
+  & password: yy3322yy\\
+     \hline
+    Hypothesis & 4870 postcode exists in the system\\
+   & Cairns is the correspondent city\\
+ \hline
+    Expected results & the system informs the user that the postal code or municipality is incorrect\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+
+\newpage
+\subsection{UC2 \textit{PA logs in}}
+{
+\subsubsection{TC1 \textit{Correct username and password}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC2} - \textit{TC1}: Correct username and password}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    Inputs & user accesses to the login page and inserts:\\
+& username: 4870 \\
+& password: yy3322yy \\
+     \hline
+    Hypothesis & 4870 postcode exist in the system \\
+ & yy3322yy is the password \\
+ \hline
+    Expected results & the system brings the user in the index page and welcome him/her\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+{
+\subsubsection{TC2 \textit{Wrong username or password}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC2} - \textit{TC2}: Wrong username or password}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+      Inputs & user accesses to the login page and inserts: \\
+& username: 4870  \\
+   & password: xx4455xx \\
+     \hline
+    Hypothesis & 4870 postcode exist in the system \\
+& yy3322yy is the password \\
+
+ \hline
+    Expected results & the system informs the user that the username or password is incorrect\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+\newpage
+{
+\subsubsection{TC3 \textit{Username doesn't exist}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC2} - \textit{TC3}: Username doesn't exist}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+       Inputs & user accesses to the login page and inserts: \\
+& username: 12345667\\
+& password: yy3322yy \\
+     \hline
+    Hypothesis & 12345667 username does not exist in the system\\
+ \hline
+    Expected results & the system informs the user that the username or password is incorrect\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+\subsection{UC3 \textit{PA enters new bin data}}
+{
+\subsubsection{TC1 \textit{correct format}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC3} - \textit{TC1}: Correct format}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+   Inputs & user accesses to the newBin page and inserts:\\
+&  lon: 145.742303 \\
+& lat: -16.923761\\
+& ticks ‘no’\\
+     \hline
+    Hypothesis & lon belongs to [0, 360)\\
+& lat belongs to [-90, 90)\\
+& a infographic choice is selected\\
+ \hline
+    Expected results & the system informs the user that the operation is done\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+\newpage
+{
+\subsubsection{TC2 \textit{Wrong lon/lat}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC3} - \textit{TC2}: Wrong lon/lat}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+     Inputs & user accesses to the newBin page and inserts:\\
+& lon: -45.742303 \\
+& lat: -16.923761 \\
+& ticks ‘no’ \\
+     \hline
+    Hypothesis & lon belongs to [0, 360) \\
+& lat belongs to [-90, 90)\\
+& a infographic choice is selected\\
+ \hline
+    Expected results & the system informs the user that the lat/lon is incorrect\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+{
+\subsubsection{TC3 \textit{Lon/lat/infographic is nan}}
+{\begin{center}
+\begin{table}[h!]
+     \renewcommand\arraystretch{1.5}
+\caption{\textbf{UC3} - \textit{TC3}: Lon/lat/infographic is nan}
+    \begin{tabular}{|p{5cm}|p{7cm}|}
+    \hline
+    Inputs & user accesses to the newBin page and inserts:\\
+& lon: -45.742303\\
+& lat: -16.923761\\
+&  no tick\\
+     \hline
+    Hypothesis & lon belongs to [0, 360)\\
+& lat belongs to [-90, 90)\\
+&  a infographic choice is selected\\
+ \hline
+    Expected results & the system informs the user that the attribute is mandatory\\
+     \hline
+    \end{tabular}   
+\end{table}
+\end{center}}
+}
+\subsection{UC4 \textit{PA visualize data on interactive map}}
+{
+\subsubsection{}
+}
+\subsection{UC5 \textit{PA requests information about data}}
+{
+\subsubsection{}
+}
+\subsection{UC6 \textit{PA updates infographic}}
+{
+\subsubsection{}
+}
+\subsection{UC7 \textit{PA visualizes statistical analysis results}}
+{
+\subsubsection{}
+}
+\subsection{UC7 \textit{PA adds a comment}}
+{
+\subsubsection{}
+}
+\subsection{UC8 \textit{PA deletes a comment}}
+{
+\subsubsection{}
+}
+\subsection{UC9 \textit{PA updates a comment}}
+{
+\subsubsection{}
+}
+\subsection{UC9 \textit{PA logs out}}
+{
+\subsubsection{}
+}
+}
+
+}
+
+\begin{thebibliography}{9}
+
+\bibitem{di Nitto:Lectures}
+Elisabetta Di Nitto (2021),
+\emph{Software Engineering for Geoinformatics - Lectures}.
+
+\end{thebibliography}
+
+\end{document}
