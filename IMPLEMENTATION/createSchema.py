@@ -32,7 +32,7 @@ commands = (
         #table for the registrantion of PA
         """ 
             CREATE TABLE pa_user(
-                postal_code VARCHAR(5) PRIMARY KEY,
+                postcode VARCHAR(5) PRIMARY KEY,
                 municipality VARCHAR(255) NOT NULL,
                 password VARCHAR(255) NOT NULL  
         )
