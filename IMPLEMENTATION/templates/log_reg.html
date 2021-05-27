@@ -1,0 +1,32 @@
+{% extends 'base.html' %} 
+
+{% block content %}
+<html>
+    <head>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="signup">
+                <h2 class="title" id="signup"><span>or</span>Signup</h2>
+                <div class="holder">
+                    <input type="text" class="input" placeholder="Name" />
+                    <input type="email" class="input" placeholder="Email" />
+                    <input type="password" class="input" placeholder="Password" />
+                </div>
+                <button class="submit">Signup</button>
+            </div>
+            <div class="login slide-up">
+                <div class="center signup">
+                    <h2 class="title"><span>or</span>Log in</h2>
+                    <div class="holder">
+                        <input type="email" class="input" placeholder="Email" />
+                        <input type="password" class="input" placeholder="Password" />
+                    </div>
+                    <button class="submit">Login</button>
+                </div>
+            </div>
+        </div>
+        <script src="script.js"></script>
+    </body>
+    {% endblock %}

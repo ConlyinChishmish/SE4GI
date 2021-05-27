@@ -13,7 +13,7 @@ from psycopg2 import (
 from shapely.geometry import Point
 
 # Create the application instance
-app = Flask(__name__, template_folder="templates", _static_folder ="static")
+app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
 
@@ -32,18 +32,106 @@ def close_dbConn():
         
         
  #Add your function here
- 
- # "cookies"
-def load_logged_in_user():
-    user_id = session.get('user_id')
+ #registration
+@app.route('/register', methods=('GET', 'POST'))
+def register():
+    if request.method == 'POST':
+        postal_code = request.form['postal_code']
+        municipality = request.form['municipality']
+        password = request.form['password']
+        error = None
 
-    if user_id is None:
+        commands= (
+                'SELECT postal_code FROM pa_user WHERE postal_code = %s', (postal_code,),
+                'SELECT postal_code FROM pa_data WHERE postal_code = %s', (postal_code,),
+                'SELECT municipality FROM pa_data WHERE postal_code = %s', (postal_code),
+                )
+        if not username:
+            error = 'postal_code is required.'
+        elif not password:
+            error = 'Password is required.'
+        elif not municipality:
+            error = 'municipality is required.'
+        else:
+            conn = get_dbConn()
+            cur = conn.cursor()
+            cur.execute('SELECT postal_code FROM pa_user WHERE postal_code = %s', (postal_code,))
+            if cur.fetchone() is not None:
+                error = 'User {} is already registered.'.format(postal_code)
+                cur.close()
+            else:
+                cur.execute('SELECT postal_code FROM pa_data WHERE postal_code = %s', (postal_code,))
+                if cur.fetchone() is not None:
+                    error = 'User {} does not exist'.format(postal_code)
+                    cur.close()
+                else:
+                  cur.execute('SELECT municipality FROM pa_data WHERE postal_code = %s', (postal_code),)
+                  if cur.fetchone()!= municipality:
+                      error = '{} and {} does not correspond'.format(postal_code,municipality)
+                      cur.close()
+
+        if error is None:
+            conn = get_dbConn()
+            cur = conn.cursor()
+            cur.execute(
+                'INSERT INTO pa_user (postal_code,municipality,password) VALUES (%s, %s, %s)',
+                (postal_code,municipality, generate_password_hash(password))
+            )
+            cur.close()
+            conn.commit()
+            return redirect(url_for('login'))
+
+        flash(error)
+
+    return render_template('/register.html')
+ 
+#login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        postal_code = request.form['postal_code']
+        password = request.form['password']
+        conn = get_dbConn()
+        cur = conn.cursor()
+        error = None
+        cur.execute(
+            'SELECT * FROM pa_user WHERE postal_code = %s', (postal_code,)
+        )
+        user = cur.fetchone()
+        cur.close()
+        conn.commit()
+    
+    if user is None:
+        error = 'Incorrect postal code.'
+    elif not check_password_hash(user[2], password):
+        error = 'Incorrect password.'
+   
+    if error is None:
+        session.clear()
+        session['user_id'] = user[0]
+        return redirect(url_for('index'))
+    
+    flash(error)
+
+    return render_template('/login.html')
+
+#logout
+def logout():
+    # remove the username from the session if it's there
+    session.clear()
+    return redirect(url_for('index'))
+ 
+# "cookies"
+def load_logged_in_user():
+    postal_code = session.get('postal_code')
+
+    if postal_code is None:
         g.user = None
     else:
         conn = get_dbConn()
         cur = conn.cursor()
         cur.execute(
-            'SELECT * FROM blog_user WHERE user_id = %s', (user_id,)
+            'SELECT * FROM pa_user WHERE postal_code = %s', (postal_code,)
         )
         g.user = cur.fetchone()
         cur.close()
@@ -80,12 +168,12 @@ def new_bin():
         elif (float(lat)<-90 or float(lat)>90):
             error ='Please insert a valid value for the latitude -90<= lat <=90'
         elif(float(lon)<0 or float(lon)>=360):
-            error ='Please insert a valid value for the longitude 0<= lat <360'
+            error ='Please insert a valid value for the longitude 0<= lon <360'
          
         #check if something went wrong in compiling the form  
         if error is not None :
             flash(error)
-            return redirect(url_for('index'))
+            return redirect(url_for('newBin'))
         #everything in the form is ok, database connection is allowed
         else : 
             conn = get_dbConn()
