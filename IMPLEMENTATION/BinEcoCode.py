@@ -104,7 +104,92 @@ def new_bin():
         return render_template('blog/newBin.html')      
         
         
-        
+@app.route('/create', methods=('GET', 'POST'))
+def create_comment():
+    if load_logged_in_user():
+        if request.method == 'POST' :
+            title = request.form['title']
+            body = request.form['body']
+            error = None
+            
+            if not title :
+                error = 'Title is required!'
+            if error is not None :
+                flash(error)
+                return redirect(url_for('index'))
+            else : 
+                conn = get_dbConn()
+                cur = conn.cursor()
+                cur.execute('INSERT INTO post (title, body, author_id) VALUES (%s, %s, %s)', 
+                            (title, body, g.user[0])
+                            )
+                cur.close()
+                conn.commit()
+                return redirect(url_for('index'))
+        else :
+            return render_template('blog/create_comment.html')
+    else :
+        error = 'Only loggedin users can insert comments!'
+        flash(error)
+        return redirect(url_for('login'))
+   
+def get_comment(id):
+    conn = get_dbConn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT *
+           FROM comments
+           WHERE comments.comment_id = %s""",
+        (id,)
+    )
+    comment = cur.fetchone()
+    cur.close()
+    if comment is None:
+        abort(404, "Comment id {0} doesn't exist.".format(id))
+
+    if comment[1] != g.user[0]:
+        abort(403)
+
+    return comment
+
+@app.route('/<int:id>/update', methods=('GET', 'POST'))
+def update_comment(id):
+    if load_logged_in_user():
+        comment = get_comment(id)
+        if request.method == 'POST' :
+            title = request.form['title']
+            body = request.form['body']
+            error = None
+            
+            if not title :
+                error = 'Title is required!'
+            if error is not None :
+                flash(error)
+                return redirect(url_for('index'))
+            else : 
+                conn = get_dbConn()
+                cur = conn.cursor()
+                cur.execute('UPDATE comment SET title = %s, body = %s'
+                               'WHERE comment_id = %s', 
+                               (title, body, id)
+                               )
+                cur.close()
+                conn.commit()
+                return redirect(url_for('index'))
+        else :
+            return render_template('blog/update_comment.html', comment = comment)
+    else :
+        error = 'Only loggedin users can insert comments!'
+        flash(error)
+        return redirect(url_for('login'))
+
+@app.route('/<int:id>/delete_comment', methods=('POST',))
+def delete_comment(id):
+    conn = get_dbConn()                
+    cur = conn.cursor()
+    cur.execute('DELETE FROM comments WHERE comment_id = %s', (id,))
+    conn.commit()
+    return redirect(url_for('index'))        
         
         
         
