@@ -32,7 +32,8 @@ commands = (
         #table for the registrantion of PA
         """ 
             CREATE TABLE pa_user(
-                postcode VARCHAR(5) PRIMARY KEY,
+                user_id SERIAL PRIMARY KEY,
+                postcode VARCHAR(5) UNIQUE NOT NULL,
                 municipality VARCHAR(255) NOT NULL,
                 password VARCHAR(255) NOT NULL  
         )
@@ -47,7 +48,7 @@ commands = (
                 title VARCHAR(350) NOT NULL,
                 body VARCHAR(500) NOT NULL,
                 FOREIGN KEY (author_id)
-                    REFERENCES pa_user (postcode)
+                    REFERENCES pa_user (user_id)
         )
         """,
     
