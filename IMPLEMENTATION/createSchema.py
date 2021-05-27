@@ -47,7 +47,7 @@ commands = (
                 title VARCHAR(350) NOT NULL,
                 body VARCHAR(500) NOT NULL,
                 FOREIGN KEY (author_id)
-                    REFERENCES pa_user (postal_code)
+                    REFERENCES pa_user (postcode)
         )
         """,
     
