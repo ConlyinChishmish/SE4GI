@@ -11,7 +11,7 @@ HOW TO USE IT
     - geoalchemy2
     - psycopg2
 4) Dowload the project on your personal computer
-5) Open the file dBconfig.txt in thE IMPLEMENTATION folder and modify it by inserting the name of you're postgreSQL database, username and password
+5) Open the file dBconfig.txt in the IMPLEMENTATION folder and modify it by inserting the name of you're postgreSQL database, username and password
 6) Open the anaconda terminal and activate the environment with the command: conda activate se4g
 7) Navigate to the folder cd your-path\SE4GI\IMPLEMENTATION
 8) Initialize the database with the command: python createSchema.py
