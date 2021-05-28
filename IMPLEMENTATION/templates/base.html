@@ -2,7 +2,7 @@
 
 <title>{% block title %}{% endblock %} - BinEco WebApp</title>
 <link rel="stylesheet" href="{{url_for('static',filename='main.css')}}">
-<link rel="stylesheet" href="{{url_for('static',filename='log-reg.css')}}">
+<!--<link rel="stylesheet" href="{{url_for('static',filename='log-reg.css')}}">-->
   
 <nav>
   <h1><a href="/index">BinEco WebApp</a></h1>
@@ -11,8 +11,7 @@
       Welcome {{ g.user[1] }}!
       <ul>
         <li><a href="/logout">Log Out</a>
-        <li><a href="/map">Interactive map</a>
-        <li><a href="/new_bin"> Insert a new bin</a>
+        <li><a href="/interactive_map">Interactive map</a>
         <li><a href="/help_us">Help us</a>
       </ul>
     {% else %}

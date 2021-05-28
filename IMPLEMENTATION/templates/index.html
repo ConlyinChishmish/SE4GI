@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
 {%if g.user %}
-{% block header %}
-  <h1>{% block title %}History of the Project{% endblock %}</h1>
-{% endblock %}
-
 {% block content %}
-    <label for="postal_code">
-<body bgcolor="#bbd0c9"  font face="Letter Spacing">
+
+<body>
 <img src="static/recycle_tree1.jpg"
-  style="float:left;margin: 10px" height="430" width="600">
-<p>this is the section of logged user
+  style="float:right;margin: 10px" height="430" width="600">
+<h2><font face="Letter Spacing" color="#00AC2F" size="90px" ></font>BinEco, be clean! </h2>
+<p align="justify"><br></p>
+<h3><font face="Letter Spacing" color="#00AC2F" size="60px"></font> BinEco is a web app that will help you in managing the distribution and organization of the bins in your city.</h3>
+<p> this should be the page of non registered user</p>
+
 </div>
-</label>
-  </form>
+</label> 
+ </form>
 {% endblock %}
 {% endif %}
