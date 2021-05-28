@@ -32,8 +32,7 @@ commands = (
         #table for the registrantion of PA
         """ 
             CREATE TABLE pa_user(
-                user_id SERIAL PRIMARY KEY,
-                postcode VARCHAR(5) UNIQUE NOT NULL,
+                postal_code VARCHAR(5) PRIMARY KEY,
                 municipality VARCHAR(255) NOT NULL,
                 password VARCHAR(255) NOT NULL  
         )
@@ -43,12 +42,12 @@ commands = (
         """ 
         CREATE TABLE comments (
                 comment_id SERIAL PRIMARY KEY,
-                author_id INTEGER NOT NULL,
+                author_id VARCHAR(5),
                 created TIMESTAMP DEFAULT NOW(),
                 title VARCHAR(350) NOT NULL,
                 body VARCHAR(500) NOT NULL,
                 FOREIGN KEY (author_id)
-                    REFERENCES pa_user (user_id)
+                    REFERENCES pa_user (postal_code)
         )
         """,
     
@@ -61,7 +60,7 @@ commands = (
                 lat DOUBLE PRECISION NOT NULL,
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
-                geom geometry(POINT)
+                geom GEOMETRY
         )
         """,
     
@@ -74,7 +73,7 @@ commands = (
                 lat DOUBLE PRECISION NOT NULL,
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
-                geom geometry(POINT)
+                geom GEOMETRY
         )
         """
         )
@@ -90,8 +89,14 @@ cur.close()
 conn.commit()
 conn.close()
 
-#setup db connection (generic connection path to be update with your credentials: 'postgresql://user:password@localhost:5432/mydatabase')
-engine = create_engine('postgresql://postgres:jawadamp@localhost:5432/binecoDB') 
+#setup db connection 
+#NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
+# build the string for the customized engine
+dbD = connStr.split()
+dbD = [x.split('=') for x in dbD]
+engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
+
+engine = create_engine(engStr)   
 
 #IMPORT DATA FROM EPICOLLECT
 # send the request to the API of Epicollect5
