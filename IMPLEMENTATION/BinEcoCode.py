@@ -67,7 +67,7 @@ def register():
                      #cur.close()
 
         if error is None:
-            conn = get_dbConn
+            conn = get_dbConn()
             cur = conn.cursor()
             cur.execute(
                 'INSERT INTO pa_user (postal_code,municipality,password) VALUES (%s, %s, %s)',
