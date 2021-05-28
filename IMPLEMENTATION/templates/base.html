@@ -1,1 +1,35 @@
+<!doctype html>
 
+<title>{% block title %}{% endblock %} - BinEco WebApp</title>
+<link rel="stylesheet" href="{{url_for('static',filename='main.css')}}">
+<link rel="stylesheet" href="{{url_for('static',filename='log-reg.css')}}">
+  
+<nav>
+  <h1><a href="/index">BinEco WebApp</a></h1>
+
+    {% if g.user %}
+      Welcome {{ g.user[1] }}!
+      <ul>
+        <li><a href="/logout">Log Out</a>
+        <li><a href="/map">Interactive map</a>
+        <li><a href="/new_bin"> Insert a new bin</a>
+        <li><a href="/update_bin">Update bin</a>
+        <li><a href="/create_comment">Add comment</a>
+      </ul>
+    {% else %}
+  <ul>      
+      <li><a href="/register">Register</a>
+      <li><a href="/login">Log In</a>
+    {% endif %}
+  </ul>
+</nav>
+      <hr>
+<section class = "content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+    <div class = "flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>
