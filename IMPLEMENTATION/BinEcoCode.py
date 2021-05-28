@@ -41,7 +41,7 @@ def register():
         password = request.form['password']
         error = None
 
-        if not username:
+        if not postal_code:
             error = 'postal_code is required.'
         elif not password:
             error = 'Password is required.'
@@ -59,14 +59,15 @@ def register():
                 if cur.fetchone() is None:
                     error = 'User {} does not exist'.format(postal_code)
                     cur.close()
-                else:
-                  cur.execute('SELECT municipality FROM pa_data WHERE postal_code = %s', (postal_code,))
-                  if cur.fetchone()!= municipality:
-                      error = '{} and {} do not correspond'.format(postal_code,municipality)
-                      cur.close()
+                #else:
+                 # cur.execute('SELECT pa_data.locality FROM pa_data WHERE postal_code = %s', (postal_code,))
+                  #if (cur.fetchone() != municipality):
+					#error=cur.fetchone()
+                    #error = '{} and {} do not correspond'.format(postal_code,municipality)
+                     #cur.close()
 
         if error is None:
-            conn = get_dbConn()
+            conn = get_dbConn
             cur = conn.cursor()
             cur.execute(
                 'INSERT INTO pa_user (postal_code,municipality,password) VALUES (%s, %s, %s)',
@@ -95,22 +96,22 @@ def login():
         user = cur.fetchone()
         cur.close()
         conn.commit()
+        
+        if user is None:
+            error = 'Incorrect postal code.'
+        elif not check_password_hash(user[2],password):
+            error = 'Incorrect password.'
+        
+        if error is None:
+            session.clear()
+            session['user_id'] = user[0]
+            return redirect(url_for('index'))
+        flash(error)
     
-    if user is None:
-        error = 'Incorrect postal code.'
-    elif not check_password_hash(user[2], password):
-        error = 'Incorrect password.'
-   
-    if error is None:
-        session.clear()
-        session['user_id'] = user[0]
-        return redirect(url_for('index'))
-    
-    flash(error)
-
     return render_template('auth/login.html')
 
 #logout
+@app.route('/logout')
 def logout():
     # remove the username from the session if it's there
     session.clear()
@@ -131,6 +132,7 @@ def load_logged_in_user():
         g.user = cur.fetchone()
         cur.close()
         conn.commit()
+        conn_close()
     if g.user is None:
         return False
     else: 
@@ -271,6 +273,5 @@ def delete_comment(id):
     return redirect(url_for('index'))        
         
         
-        
-        if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == '__main__':
+	app.run(debug=True)
