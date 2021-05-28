@@ -43,7 +43,7 @@ commands = (
         """ 
         CREATE TABLE comments (
                 comment_id SERIAL PRIMARY KEY,
-                author_id VARCHAR(5),
+                author_id INTEGER NOT NULL,
                 created TIMESTAMP DEFAULT NOW(),
                 title VARCHAR(350) NOT NULL,
                 body VARCHAR(500) NOT NULL,
