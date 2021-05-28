@@ -198,6 +198,7 @@ fileTxt.close()
 
 #select useful columns
 df_au_postcode = df_au_postcode.iloc[:, 2:4]
+df_au_postcode.columns = ['postal_code','Municipality']
 
 #import to PostgreSQL
 df_au_postcode.to_sql('pa_data', engine, if_exists = 'replace', index=False)
