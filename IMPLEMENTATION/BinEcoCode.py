@@ -78,7 +78,7 @@ def register():
 
         flash(error)
 
-    return render_template('/register.html')
+    return render_template('auth/register.html')
  
 #login
 @app.route('/login', methods=['GET', 'POST'])
@@ -108,7 +108,7 @@ def login():
     
     flash(error)
 
-    return render_template('/login.html')
+    return render_template('auth/login.html')
 
 #logout
 def logout():
