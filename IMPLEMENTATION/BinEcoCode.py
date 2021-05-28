@@ -168,7 +168,7 @@ def new_bin():
         #check if something went wrong in compiling the form  
         if error is not None :
             flash(error)
-            return redirect(url_for('newBin'))
+            return redirect(url_for('new_bin'))
         #everything in the form is ok, database connection is allowed
         else : 
             conn = get_dbConn()
@@ -206,7 +206,7 @@ def create_comment():
                 conn.commit()
                 return redirect(url_for('index'))
         else :
-            return render_template('blog/create_comment.html')
+            return render_template('blog/createComment.html')
     else :
         error = 'Only loggedin users can insert comments!'
         flash(error)
@@ -256,7 +256,7 @@ def update_comment(id):
                 conn.commit()
                 return redirect(url_for('index'))
         else :
-            return render_template('blog/update_comment.html', comment = comment)
+            return render_template('blog/updateComment.html', comment = comment)
     else :
         error = 'Only loggedin users can insert comments!'
         flash(error)
