@@ -195,7 +195,7 @@ def create_comment():
                 error = 'Title is required!'
             if error is not None :
                 flash(error)
-                return redirect(url_for('index'))
+                return redirect(url_for('create_comment'))
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
@@ -244,7 +244,7 @@ def update_comment(id):
                 error = 'Title is required!'
             if error is not None :
                 flash(error)
-                return redirect(url_for('index'))
+                return redirect(url_for('update_comment'))
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
