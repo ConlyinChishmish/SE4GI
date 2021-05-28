@@ -183,7 +183,7 @@ def new_bin():
         return render_template('blog/newBin.html')       
         
         
-@app.route('/create', methods=('GET', 'POST'))
+@app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
     if load_logged_in_user():
         if request.method == 'POST' :
@@ -231,7 +231,7 @@ def get_comment(id):
 
     return comment
 
-@app.route('/<int:id>/update', methods=('GET', 'POST'))
+@app.route('/<int:id>/update_comment', methods=('GET', 'POST'))
 def update_comment(id):
     if load_logged_in_user():
         comment = get_comment(id)
