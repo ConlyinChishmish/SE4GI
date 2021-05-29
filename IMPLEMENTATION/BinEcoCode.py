@@ -14,6 +14,11 @@ from shapely.geometry import Point, Polygon
 
 from numpy import array
 
+from shapely import geometry
+import pyproj
+from shapely.ops import transform
+from functools import partial
+
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
@@ -149,6 +154,17 @@ def index():
     else:
         return render_template('about.html')
 
+#creating the function for computing buffer around bins
+def geodesic_point_buffer(lat, lon, radius):
+    local_azimuthal_projection = "+proj=aeqd +R=6371000 +units=m +lat_0={} +lon_0={}".format(lat, lon)
+    wgs84_to_aeqd = partial(pyproj.transform, pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"), pyproj.Proj(local_azimuthal_projection),)
+    aeqd_to_wgs84 = partial(pyproj.transform, pyproj.Proj(local_azimuthal_projection), pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),)
+    center = Point(float(lon), float(lat))
+    point_transformed = transform(wgs84_to_aeqd, center)
+    buffer = point_transformed.buffer(radius)
+    # Get the polygon with lat lon coordinates
+    circle_poly = transform(aeqd_to_wgs84, buffer)
+    return circle_poly
 
 # UC.3 Pa enters new data about the bin
 @app.route('/newBin', methods=('GET', 'POST'))
@@ -159,7 +175,7 @@ def new_bin():
         infographic = request.form['infographic']
         
         geom = Point(lon,lat)
-	buffer = geom.buffer(300)
+	buffer = geodesic_point_buffer(lat, lon, 500.0)
         error = None
        
         # check if the data inserted are correct
