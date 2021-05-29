@@ -1,3 +1,4 @@
+#query area
 def get_comment(id):
     conn = get_dbConn()
     cur = conn.cursor()
@@ -16,3 +17,24 @@ def get_comment(id):
         abort(403)  # access is forbidden
 
     return comment
+----------------------------------------------------------------
+#query template
+def get_comment(id):
+    conn = get_dbConn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT *
+           FROM comments
+           WHERE comments.comment_id = %s""",
+        (id,)
+    )
+    comment = cur.fetchone()
+    cur.close()
+    if comment is None:
+        abort(404, "Comment id {0} doesn't exist.".format(id))
+
+    if comment[1] != g.user[0]:
+        abort(403)  # access is forbidden
+  -------------------------------------------------------------
+  #update bin
+  
