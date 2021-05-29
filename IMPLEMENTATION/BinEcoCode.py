@@ -12,6 +12,8 @@ from psycopg2 import (
 
 from shapely.geometry import Point
 
+from numpy import array
+
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
@@ -184,7 +186,51 @@ def new_bin():
     else :
         return render_template('blog/newBin.html')       
         
-        
+g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+#for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
+#for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
+
+
+def analysis(area,id_bin):
+	data_geodf = queryByArea(area) #geodataframe with litter data contained in the selected area (or buffer)
+	#change quantity into numeric values to compute daily mean
+	for i, row in data_geodf.iterrows():
+    		if data_geodf.loc[i, 'Quantity'] == "low":
+        		data_geodf.loc[i, 'Quantity'] = "1"
+		elif data_geodf.loc[i, 'Quantity'] == "medium":
+        		data_geodf.loc[i, 'Quantity'] = "2"
+		elif data_geodf.loc[i, 'Quantity'] == "high":
+        		data_geodf.loc[i, 'Quantity'] = "3"
+	data_geodf['Quantity'] = pd.to_numeric(data_geodf['Quantity'])
+	#create a new dataframe with data grouped by date of creation and compute the mean according to the Quantity attribute
+	#we obtain a dataframe with two columns, one for Date_of_creation and one for quantity's mean, each row corresponds to a certain Date_of_creation
+	daily_df = data_geodf.groupby(['Date_of_creation'])['Quantity'].mean().reset_index(name='Quantity_daily_mean')
+	#assign string type values "low"-"medium"-"high" to daily_df quantity means
+	for i, row in daily_df.iterrows():
+		if daily_df.loc[i, 'Quantity_daily_mean'] <= 1.5:
+        		daily_df.loc[i, 'Quantity_daily_mean'] = "low"
+		elif daily_df.loc[i, 'Quantity_daily_mean'] >= 1.5 and daily_df.loc[i, 'Quantity_daily_mean'] <= 2.5:
+			daily_df.loc[i, 'Quantity_daily_mean'] = "medium"
+		elif daily_df.loc[i, 'Quantity_daily_mean'] >= 2.5:
+			daily_df.loc[i, 'Quantity_daily_mean'] = "high"
+	#compute absolute frequences of the various quantity over 30 days (sum of each type of quantity / 30 days)
+	#first count the amount of low-medium-high quantity
+	frequency_df = daily_df.groupby(['Quantity_daily_mean'])['Quantity_daily_mean'].count().reset_index(name='Count')
+	#then calculate absolute frequency
+	for i, row in frequency_df.iterrows():
+		frequency_df.loc[i, 'Absolute_frequency'] = frequency_df.loc[i, 'Count']/30
+	#compute none frequency
+	none_quantity = 'none'
+	none_count = 30-(frequency_df['Count'].sum())
+	none_frequency = 1-(frequency_df['Absolute_frequency'].sum())
+
+	frequency_df.loc[frequency_df.index.max()+1] = [none_quantity, none_count, none_frequency]
+	#order rows according to quantity
+	frequency_df['Quantity_daily_mean'] = pd.Categorical(frequency_df['Quantity_daily_mean'],categories=['low','medium','high','none'])
+	frequency_df = frequency_df.sort_values('Quantity_daily_mean', ignore_index=True)
+	
+		
+
 @app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
     if load_logged_in_user():
