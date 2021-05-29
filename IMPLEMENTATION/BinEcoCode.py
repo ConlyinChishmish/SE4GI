@@ -10,7 +10,7 @@ from psycopg2 import (
         connect
 )
 
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon
 
 from numpy import array
 
@@ -158,7 +158,8 @@ def new_bin():
         lat = request.form['lat']
         infographic = request.form['infographic']
         
-        geom = Point(lon,lat)    
+        geom = Point(lon,lat)
+	buffer = geom.buffer(300)
         error = None
        
         # check if the data inserted are correct
@@ -177,8 +178,8 @@ def new_bin():
         else : 
             conn = get_dbConn()
             cur = conn.cursor()
-            cur.execute('INSERT INTO bin (lon, lat, infographic, geom ) VALUES (%f, %f, %s, ST_Point(%(geom)s))', 
-                        (lon, lat, infographic, geom)
+            cur.execute('INSERT INTO bin (lon, lat, infographic, geom, buffer) VALUES (%f, %f, %s, ST_Point(%(geom)s), ST_Polygon(%(buffer)s))', 
+                        (lon, lat, infographic, geom, buffer)
                         )
             cur.close()
             conn.commit()
