@@ -163,7 +163,7 @@ def index():
 
 
 # UC.3 Pa enters new data about the bin
-@app.route('/newBin', methods=('GET', 'POST'))
+@app.route('/new_bin', methods=('GET', 'POST'))
 def new_bin():
     if request.method == 'POST':
         lon = request.form['lon']
@@ -196,9 +196,25 @@ def new_bin():
             conn.commit()
             return redirect(url_for('index'))
     else:
-        return render_template('blog/newBin.html')
+        return render_template('new_bin.html')
 
-
+@app.route('/help_us')
+def help_us():
+	
+    conn = get_dbConn()   
+    cur = conn.cursor()
+    cur.execute(
+            """SELECT p.postal_code, c.comment_id, c.created, c.title, c.body 
+               FROM pa_user AS p, comments AS c WHERE  
+                    p.postal_code = c.author_id"""
+                    )
+    posts = cur.fetchall()
+    cur.close()
+    conn.commit()
+    conn.close()
+    load_logged_in_user()
+    return render_template('help_us/index_help.html', posts=posts)
+	
 @app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
     if load_logged_in_user():
@@ -222,7 +238,7 @@ def create_comment():
                 conn.commit()
                 return redirect(url_for('index'))
         else:
-            return render_template('blog/createComment.html')
+            return render_template('help_us/createComment.html')
     else:
         error = 'Only loggedin users can insert comments!'
         flash(error)
@@ -274,7 +290,7 @@ def update_comment(id):
                 conn.commit()
                 return redirect(url_for('index'))
         else:
-            return render_template('blog/updateComment.html', comment=comment)
+            return render_template('help_us/updateComment.html', comment=comment)
     else:
         error = 'Only loggedin users can insert comments!'
         flash(error)
