@@ -245,7 +245,7 @@ def analysis(area,id_bin):
     			newItem = True
 		elif absolute_frequency_array[2] >= threshold[2]:
     			newItem = True
-		elif
+		else:
 			newItem = False
 		return newItem
 
