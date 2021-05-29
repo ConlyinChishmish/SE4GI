@@ -229,7 +229,23 @@ def analysis(area,id_bin):
 	frequency_df['Quantity_daily_mean'] = pd.Categorical(frequency_df['Quantity_daily_mean'],categories=['low','medium','high','none'])
 	frequency_df = frequency_df.sort_values('Quantity_daily_mean', ignore_index=True)
 	
-		
+	#if bin is not contained in the area return array of absolute frequencies
+	absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
+	if id_bin is None:
+		return absolute_frequency_array
+	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
+	else:
+		if absolute_frequency_array[0] >= 0.7:
+    			newItem = False
+		elif absolute_frequency_array[0] <= 0.2:
+    			newItem = True
+		elif absolute_frequency_array[1] >= 0.6:
+    			newItem = True
+		elif absolute_frequency_array[2] >= 0.5:
+    			newItem = True
+		elif absolute_frequency_array[3] >= 0.3:
+    			newItem = True
+		return newItem
 
 @app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
