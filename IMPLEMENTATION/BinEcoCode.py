@@ -235,15 +235,15 @@ def analysis(area,id_bin):
 		return absolute_frequency_array
 	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
 	else:
-		if absolute_frequency_array[0] >= 0.7:
+		if absolute_frequency_array[3] >= 0.7:
     			newItem = False
-		elif absolute_frequency_array[0] <= 0.2:
+		elif absolute_frequency_array[3] <= threshold[3]:
     			newItem = True
-		elif absolute_frequency_array[1] >= 0.6:
+		elif absolute_frequency_array[0] >= threshold[0]:
     			newItem = True
-		elif absolute_frequency_array[2] >= 0.5:
+		elif absolute_frequency_array[1] >= threshold[1]:
     			newItem = True
-		elif absolute_frequency_array[3] >= 0.3:
+		elif absolute_frequency_array[2] >= threshold[2]:
     			newItem = True
 		return newItem
 
