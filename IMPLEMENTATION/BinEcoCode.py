@@ -198,6 +198,24 @@ def new_bin():
     else:
         return render_template('new_bin.html')
 
+
+def visualize_results(results):
+	#array for the x axis
+	val = np.array(['low','medium','high','none'])
+	col = np.array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
+	plt.bar(val,results, color = col)
+	for i in range(4):
+		plt.axhline(y=threshold[i], color= col[i])
+	plt.ylim(0,1)
+	plt.title("Absolute frequency of quantiy and its threshold")
+	plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+	
+	#save the plot in a image
+	plt.savefig('/static/plot_image.eps', format='eps')
+	
+	return render_template('visualize_results.html')
+		
+	
 @app.route('/help_us')
 def help_us():
 	
