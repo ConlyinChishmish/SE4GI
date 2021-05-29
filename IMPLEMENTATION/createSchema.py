@@ -10,6 +10,11 @@ from psycopg2 import (
 import requests
 import json
 import datetime
+from shapely.geometry import Point, Polygon
+from shapely import geometry
+import pyproj
+from shapely.ops import transform
+from functools import partial
 
 #open the configuration parameter from a txt file the table
 myFile = open('dbConfig.txt')
@@ -22,7 +27,8 @@ cleanup = (
         'DROP TABLE IF EXISTS comments',
         'DROP TABLE IF EXISTS bin_cairns',
         'DROP TABLE IF EXISTS bin_townsville',
-        'DROP TABLE IF EXISTS litter'
+        'DROP TABLE IF EXISTS litter',
+        'DROP TABLE IF EXISTS pa_data'
         )
 
 
@@ -60,7 +66,8 @@ commands = (
                 lat DOUBLE PRECISION NOT NULL,
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
-                geom GEOMETRY
+                geom GEOMETRY,
+                buffer GEOMETRY
         )
         """,
     
@@ -73,7 +80,8 @@ commands = (
                 lat DOUBLE PRECISION NOT NULL,
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
-                geom GEOMETRY
+                geom GEOMETRY,
+                buffer GEOMETRY
         )
         """
         )
@@ -124,6 +132,18 @@ data_geodf = gpd.GeoDataFrame(data_df, geometry=gpd.points_from_xy(data_df.Longi
 data_geodf.to_postgis('litter', engine, if_exists = 'replace', index=False)
 
 #CREATING THE DATAFRAME OF THE BIN USING THE DATE FROM OSM AND UPDATE THE TABLE OF BINS
+#creating the function for computing buffer around bins
+
+def geodesic_point_buffer(lat, lon, radius):
+    local_azimuthal_projection = "+proj=aeqd +R=6371000 +units=m +lat_0={} +lon_0={}".format(lat, lon)
+    wgs84_to_aeqd = partial(pyproj.transform, pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"), pyproj.Proj(local_azimuthal_projection),)
+    aeqd_to_wgs84 = partial(pyproj.transform, pyproj.Proj(local_azimuthal_projection), pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),)
+    center = Point(float(lon), float(lat))
+    point_transformed = transform(wgs84_to_aeqd, center)
+    buffer = point_transformed.buffer(radius)
+    # Get the polygon with lat lon coordinates
+    circle_poly = transform(aeqd_to_wgs84, buffer)
+    return circle_poly
 
 #Town of CAIRNS
 #opening the file and save it in a daframe
@@ -140,6 +160,11 @@ binCairns_gdf['lon'] = binCairns_gdf['geometry'].x
 binCairns_gdf['lat'] = binCairns_gdf['geometry'].y
 # create the columns of datetime and set it
 binCairns_gdf['date'] = datetime.datetime(2018, 5, 1)
+#adding buffer attribute
+#adding buffer attribute
+for i, row in binCairns_gdf.iterrows():
+    binCairns_gdf.loc[i, 'buffer'] = geodesic_point_buffer(binCairns_gdf.loc[i, 'lat'], binCairns_gdf.loc[i, 'lon'], 500.0)
+
 #import to PostgreSQL
 binCairns_gdf.to_postgis('cairns_temp', engine, if_exists = 'replace', index=False)
 
@@ -158,17 +183,21 @@ binTownsville_gdf['lon'] = binTownsville_gdf['geometry'].x
 binTownsville_gdf['lat'] = binTownsville_gdf['geometry'].y
 # create the columns of datetime and set it
 binTownsville_gdf['date'] = datetime.datetime(2018, 5, 1)
+#adding buffer attribute
+for i, row in binTownsville_gdf.iterrows():
+    binTownsville_gdf.loc[i, 'buffer'] = geodesic_point_buffer(binTownsville_gdf.loc[i, 'lat'], binTownsville_gdf.loc[i, 'lon'], 500.0)
+
 #import in PostgreSQL
 binTownsville_gdf.to_postgis('townsville_temp', engine, if_exists = 'replace', index=False)
 
 # creating the query command to insert data into DB original bins' tables from temporary bins' table
 insert_query = ("""
-    INSERT INTO bin_cairns (bin_id,lon,lat,geom,bin_date)
-    SELECT full_id,lon,lat,geometry,date FROM cairns_temp;
+    INSERT INTO bin_cairns (bin_id,lon,lat,geom,bin_date,buffer)
+    SELECT full_id,lon,lat,geometry,date,buffer FROM cairns_temp;
     """,
     """
-    INSERT INTO bin_townsville (bin_id,lon,lat,geom,bin_date)
-    SELECT full_id,lon,lat,geometry,date FROM townsville_temp;
+    INSERT INTO bin_townsville (bin_id,lon,lat,geom,bin_date,buffer)
+    SELECT full_id,lon,lat,geometry,date,buffer FROM townsville_temp;
     """)
 # drop temporary bins' tables
 cleanup_temp = (
