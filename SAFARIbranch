@@ -1,40 +1,28 @@
-#query area
-def get_comment(id):
-    conn = get_dbConn()
-    cur = conn.cursor()
-    cur.execute(
-        """SELECT *
-           FROM comments
-           WHERE comments.comment_id = %s""",
-        (id,)
-    )
-    comment = cur.fetchone()
-    cur.close()
-    if comment is None:
-        abort(404, "Comment id {0} doesn't exist.".format(id))
+#querytemplate
+import pandas as pd
+import geopandas as gpd
+from shapely.geometry import Point
 
-    if comment[1] != g.user[0]:
-        abort(403)  # access is forbidden
+def get_dbConn():
+conn = get_dbConn()
 
-    return comment
-----------------------------------------------------------------
-#query template
-def get_comment(id):
-    conn = get_dbConn()
-    cur = conn.cursor()
-    cur.execute(
-        """SELECT *
-           FROM comments
-           WHERE comments.comment_id = %s""",
-        (id,)
-    )
-    comment = cur.fetchone()
-    cur.close()
-    if comment is None:
-        abort(404, "Comment id {0} doesn't exist.".format(id))
+mycursor = mydb.cursor()
 
-    if comment[1] != g.user[0]:
-        abort(403)  # access is forbidden
-  -------------------------------------------------------------
-  #update bin
+mycursor.execute("SELECT Litter_type* FROM db_Conn")
+
+litter= df.loc[df['litter_type']=='litter']
+print('date of litter:  ', litter)
+
+litter.to_csv('/desktop')
+
+date_litter= rome.loc[(litter['DATE'] >= '2018-09-04') & (litter['DATE'] < '2018-10-4')]
+
+print('the date of litter:  ', date_litter.describe())
+
+myresult = mycursor.fetchall()
+
+for row in myresult:
+    print(row)
+    
+cur.close()   
   
