@@ -67,7 +67,8 @@ commands = (
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
                 geom GEOMETRY,
-                buffer GEOMETRY
+                buffer GEOMETRY,
+                critical BOOLEAN NOT NULL DEFAULT 'False'
         )
         """,
     
@@ -81,7 +82,8 @@ commands = (
                 infographic BOOLEAN NOT NULL DEFAULT 'False',
                 infographic_date DATE DEFAULT NULL,
                 geom GEOMETRY,
-                buffer GEOMETRY
+                buffer GEOMETRY,
+                critical BOOLEAN NOT NULL DEFAULT 'False'
         )
         """
         )
