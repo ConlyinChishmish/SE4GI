@@ -208,7 +208,7 @@ g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
 
-def analysis(area,id_bin):
+def analysis(area,id):
 	data_geodf = queryByArea(area) #geodataframe with litter data contained in the selected area (or buffer)
 	#change quantity into numeric values to compute daily mean
 	for i, row in data_geodf.iterrows():
@@ -248,7 +248,7 @@ def analysis(area,id_bin):
 	
 	#if bin is not contained in the area return array of absolute frequencies
 	absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
-	if id_bin is None:
+	if id is None:
 		return absolute_frequency_array
 	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
 	else:
@@ -264,7 +264,17 @@ def analysis(area,id_bin):
     			newItem = True
 		else:
 			newItem = False
-		return newItem
+			
+		conn = get_dbConn()
+            	cur = conn.cursor()
+            	cur.execute(
+                	'INSERT INTO bin_cairns (critical) VALUES (%s) WHERE id_bin = %s', #bin_cairns or bin_townsville according to the dataset we want to use
+			(newItem, id)
+            	)
+            	cur.close()
+            	conn.commit()
+			    
+		return 
 
 @app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
