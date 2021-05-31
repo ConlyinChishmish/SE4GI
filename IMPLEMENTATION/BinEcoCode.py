@@ -131,10 +131,10 @@ def register():
                 if cur.fetchone() is None:
                     error = 'User {} does not exist'.format(postal_code)
                     cur.close()
+		#check if municipality and postal code correspond
                 #else:
                  # cur.execute('SELECT pa_data.locality FROM pa_data WHERE postal_code = %s', (postal_code,))
                   #if (cur.fetchone() != municipality):
-					#error=cur.fetchone()
                     #error = '{} and {} do not correspond'.format(postal_code,municipality)
                      #cur.close()
 
