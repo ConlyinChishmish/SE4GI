@@ -194,7 +194,7 @@ def logout():
  
 # "cookies"
 def load_logged_in_user():
-    postal_code = session.get('postal_code')
+    postal_code = session.get('user_id')
 
     if postal_code is None:
         g.user = None
@@ -218,26 +218,26 @@ def load_logged_in_user():
 @app.route('/index')
 def index():
     if load_logged_in_user():
-        return render_template('index.html')
+        return render_template('indexlogged.html')
     else:
-        return render_template('about.html')
+        return render_template('index.html')
 
 # UC.3 Pa enters new data about the bin
-@app.route('/newBin', methods=('GET', 'POST'))
+@app.route('/new_bin', methods=('GET', 'POST'))
 def new_bin():
     if request.method == 'POST' :
         lon = request.form['lon']
         lat = request.form['lat']
         infographic = request.form['infographic']
         
-        geom = Point(lon,lat)
+        geom = Point(lon, lat)
 	buffer = geodesic_point_buffer(lat, lon, 500.0)
         error = None
        
         # check if the data inserted are correct
         if (not lon or not lat):
             error = '*this data is required!'
-        elif (float(lat)<-90 or float(lat)>90):
+        elif (float(lat)< -90 or float(lat)>90):
             error ='Please insert a valid value for the latitude -90<= lat <=90'
         elif(float(lon)<0 or float(lon)>=360):
             error ='Please insert a valid value for the longitude 0<= lon <360'
@@ -257,7 +257,7 @@ def new_bin():
             conn.commit()
             return redirect(url_for('index'))
     else :
-        return render_template('blog/newBin.html')       
+        return render_template('new_bin.html')       
         
 g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
@@ -389,7 +389,7 @@ def create_comment():
                 conn.commit()
                 return redirect(url_for('index'))
         else :
-            return render_template('blog/createComment.html')
+            return render_template('help_us/createComment.html')
     else :
         error = 'Only loggedin users can insert comments!'
         flash(error)
@@ -439,7 +439,7 @@ def update_comment(id):
                 conn.commit()
                 return redirect(url_for('index'))
         else :
-            return render_template('blog/updateComment.html', comment = comment)
+            return render_template('help_us/updateComment.html', comment = comment)
     else :
         error = 'Only loggedin users can insert comments!'
         flash(error)
@@ -455,4 +455,5 @@ def delete_comment(id):
         
         
 if __name__ == '__main__':
-	app.run(debug=True)
+    app.run(debug=True) 
+	
