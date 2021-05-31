@@ -36,8 +36,24 @@ def close_dbConn():
     if 'dbConn' in g:
         g.dbComm.close()
         g.pop('dbConn')
-        
-        
+       
+ 
+#creating the function for computing buffer around bins
+def geodesic_point_buffer(lat, lon, radius):
+    local_azimuthal_projection = "+proj=aeqd +R=6371000 +units=m +lat_0={} +lon_0={}".format(lat, lon)
+    wgs84_to_aeqd = partial(pyproj.transform, pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"), pyproj.Proj(local_azimuthal_projection),)
+    aeqd_to_wgs84 = partial(pyproj.transform, pyproj.Proj(local_azimuthal_projection), pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),)
+    center = Point(float(lon), float(lat))
+    point_transformed = transform(wgs84_to_aeqd, center)
+    buffer = point_transformed.buffer(radius)
+    # Get the polygon with lat lon coordinates
+    circle_poly = transform(aeqd_to_wgs84, buffer)
+    return circle_poly
+
+#creating the function for configurating bins table according to registered PA (we retrieve data from OSM)
+def geodesic_point_buffer(lat, lon, radius):
+    
+
  #Add your function here
  #registration
 @app.route('/register', methods=('GET', 'POST'))
@@ -87,7 +103,7 @@ def register():
         flash(error)
 
     return render_template('auth/register.html')
- 
+
 #login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -153,18 +169,6 @@ def index():
         return render_template('index.html')
     else:
         return render_template('about.html')
-
-#creating the function for computing buffer around bins
-def geodesic_point_buffer(lat, lon, radius):
-    local_azimuthal_projection = "+proj=aeqd +R=6371000 +units=m +lat_0={} +lon_0={}".format(lat, lon)
-    wgs84_to_aeqd = partial(pyproj.transform, pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"), pyproj.Proj(local_azimuthal_projection),)
-    aeqd_to_wgs84 = partial(pyproj.transform, pyproj.Proj(local_azimuthal_projection), pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),)
-    center = Point(float(lon), float(lat))
-    point_transformed = transform(wgs84_to_aeqd, center)
-    buffer = point_transformed.buffer(radius)
-    # Get the polygon with lat lon coordinates
-    circle_poly = transform(aeqd_to_wgs84, buffer)
-    return circle_poly
 
 # UC.3 Pa enters new data about the bin
 @app.route('/newBin', methods=('GET', 'POST'))
@@ -269,7 +273,7 @@ def analysis(data_geodf,id):
 		conn = get_dbConn()
             	cur = conn.cursor()
             	cur.execute(
-                	'INSERT INTO bin_cairns (critical) VALUES (%s) WHERE id_bin = %s', #bin_cairns or bin_townsville according to the dataset we want to use
+                	'INSERT INTO bin_cairns (critical) VALUES (%s) WHERE id_bin = %s AND infographic = 'false'', #bin_cairns or bin_townsville according to the dataset we want to use
 			(newItem, id)
             	)
             	cur.close()
