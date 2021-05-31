@@ -9,8 +9,9 @@ from psycopg2 import (
 )
 import requests
 import json
+
 import datetime
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 from shapely import geometry
 import pyproj
 from shapely.ops import transform
