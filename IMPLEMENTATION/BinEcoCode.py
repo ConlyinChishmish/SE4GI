@@ -208,8 +208,8 @@ g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
 
-def analysis(area,id):
-	data_geodf = queryByArea(area) #geodataframe with litter data contained in the selected area (or buffer)
+def analysis(data_geodf,id):
+	#data_geodf geodataframe with litter data contained in the selected area (or buffer)
 	#change quantity into numeric values to compute daily mean
 	for i, row in data_geodf.iterrows():
     		if data_geodf.loc[i, 'Quantity'] == "low":
