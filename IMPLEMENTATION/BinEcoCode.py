@@ -214,7 +214,6 @@ def load_logged_in_user():
         g.user = cur.fetchone()
         cur.close()
         conn.commit()
-        conn.close()
     if g.user is None:
         return False
     else: 
@@ -237,7 +236,7 @@ def new_bin():
         lat = request.form['lat']
         infographic = request.form['infographic']
         
-        geom = Point(lon, lat)
+        geom = Point(float(lon), float(lat))
         buffer = geodesic_point_buffer(lat, lon, 500.0)
         error = None
        
@@ -447,7 +446,6 @@ def help_us():
     posts = cur.fetchall()
     cur.close()
     conn.commit()
-    conn.close()
     load_logged_in_user()
     return render_template('help_us/index_help.html', posts=posts)
 
