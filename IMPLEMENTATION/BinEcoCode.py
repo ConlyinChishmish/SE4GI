@@ -263,6 +263,31 @@ g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
+# query by temporal window
+def query_temp:
+    engine= customized_engine()
+    
+    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    # cast on the data column
+    gdf_litt['Date_of_creation'] = pd.to_datetime(gdf_litt['Date_of_creation'], format='%d/%m/%Y')
+    # find the last entry in the dataframe
+    last_date = max(gdf_litt['Date_of_creation'])
+    # compute the 30 days starting from the last entry date
+    start_date= last_date - timedelta(30)
+    # filter the data of litter with the date
+    filtered_litter = gdf_litt[(gdf_litt.Date_of_creation >= start_date) & (gdf_litt.Date_of_creation <= last_date)]
+    
+    return filtered_litter
+
+# query by area function
+def query_by_area(area):
+    engine = customized_engine()
+    # putting all the points into a geodataframe
+    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    # select the points contained in the area
+    filtered_litter = gdf_litt[gdf_litt.geometry.within(area)]
+    
+    return filtered_litter
 
 def analysis(data_geodf,id):
 	#data_geodf geodataframe with litter data contained in the selected area (or buffer)
@@ -347,8 +372,59 @@ def visualize_results(results):
 	plt.savefig('/static/plot_image.eps', format='eps')
 	
 	return render_template('visualize_results.html')
-		
-	
+
+# find bin by id
+def get_bin(id):
+    conn = get_dbConn()
+    cur = conn.cursor()
+    cur.execute(
+        """SELECT *
+           FROM bins
+           WHERE bins.bin_id = %s""",
+        (id,)
+    )
+    Bin = cur.fetchone()
+    cur.close()
+    if Bin is None:
+        abort(404, "Bin id {0} doesn't exist.".format(id))
+
+    if Bin[1] != g.user[0]:
+        abort(403)  #access is forbidden 
+
+    return Bin
+
+# update bin
+@app.route('/<int:id>/update_bin', methods=('GET', 'POST'))
+def update_bin(id):
+    if load_logged_in_user():
+        Bin= get_bin(id)
+        if request.method == 'POST' :
+            infografic= request.form['infographic yes/no']
+            error = None
+            
+            if not infografic :
+                error = 'infographic is required is required!'
+            if error is not None :
+                flash(error)
+                return redirect(url_for('update_bin'))
+            else : 
+                conn = get_dbConn()
+                cur = conn.cursor()
+                cur.execute('UPDATE bins SET infografic = %s'
+                               'WHERE bin_id = %s', 
+                               (infographic, id)
+                               )
+                cur.close()
+                conn.commit()
+                return redirect(url_for('index'))
+        else :
+            return render_template('blog/update_bin.html', comment = comment)
+    else :
+        error = 'Only loggedin users can updaete bins!'
+        flash(error)
+        return redirect(url_for('interactive_map'))
+
+#COMMENT SECTION	
 @app.route('/help_us')
 def help_us():
 	
