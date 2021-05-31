@@ -1,1 +1,1 @@
-dbname=binecoDB user=postgres password=jawadamp
+dbname=binecoDB user=postgres password=r3df0x

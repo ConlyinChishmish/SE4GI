@@ -19,9 +19,11 @@ import pyproj
 from shapely.ops import transform
 from functools import partial
 
+import pandas as pd
+import geopandas as gpd
 import osmnx as ox
 import matplotlib.pyplot as plt
-import datetime
+import datetime 
 
 from sqlalchemy import create_engine
 
@@ -31,8 +33,13 @@ app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
 
-def customized_engine() #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
+def customized_engine(): #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
     # build the string for the customized engine
+    #open the configuration parameter from a txt file the table
+    myFile = open('dbConfig.txt')
+    connStr = myFile.readline()
+    myFile.close()
+    
     dbD = connStr.split()
     dbD = [x.split('=') for x in dbD]
     engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
@@ -148,10 +155,8 @@ def register():
             cur.close()
             conn.commit()
 	
-	    binsTable(municipality) 
-		
-            return redirect(url_for('login'))
-
+        binsTable(municipality) 
+        return redirect(url_for('login'))
         flash(error)
 
     return render_template('auth/register.html')
@@ -207,7 +212,7 @@ def load_logged_in_user():
         g.user = cur.fetchone()
         cur.close()
         conn.commit()
-        conn_close()
+        conn.close()
     if g.user is None:
         return False
     else: 
@@ -231,7 +236,7 @@ def new_bin():
         infographic = request.form['infographic']
         
         geom = Point(lon, lat)
-	buffer = geodesic_point_buffer(lat, lon, 500.0)
+        buffer = geodesic_point_buffer(lat, lon, 500.0)
         error = None
        
         # check if the data inserted are correct
@@ -258,13 +263,14 @@ def new_bin():
             return redirect(url_for('index'))
     else :
         return render_template('new_bin.html')       
-        
-g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+ 
+#global variable constant values   
+threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
 # query by temporal window
-def query_temp:
+def query_temp():
     engine= customized_engine()
     
     gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
@@ -273,7 +279,7 @@ def query_temp:
     # find the last entry in the dataframe
     last_date = max(gdf_litt['Date_of_creation'])
     # compute the 30 days starting from the last entry date
-    start_date= last_date - timedelta(30)
+    start_date= last_date - datetime.timedelta(30)
     # filter the data of litter with the date
     filtered_litter = gdf_litt[(gdf_litt.Date_of_creation >= start_date) & (gdf_litt.Date_of_creation <= last_date)]
     
@@ -289,78 +295,10 @@ def query_by_area(area):
     
     return filtered_litter
 
-def analysis(data_geodf,id):
-	#data_geodf geodataframe with litter data contained in the selected area (or buffer)
-	#change quantity into numeric values to compute daily mean
-	for i, row in data_geodf.iterrows():
-    		if data_geodf.loc[i, 'Quantity'] == "low":
-        		data_geodf.loc[i, 'Quantity'] = "1"
-		elif data_geodf.loc[i, 'Quantity'] == "medium":
-        		data_geodf.loc[i, 'Quantity'] = "2"
-		elif data_geodf.loc[i, 'Quantity'] == "high":
-        		data_geodf.loc[i, 'Quantity'] = "3"
-	data_geodf['Quantity'] = pd.to_numeric(data_geodf['Quantity'])
-	#create a new dataframe with data grouped by date of creation and compute the mean according to the Quantity attribute
-	#we obtain a dataframe with two columns, one for Date_of_creation and one for quantity's mean, each row corresponds to a certain Date_of_creation
-	daily_df = data_geodf.groupby(['Date_of_creation'])['Quantity'].mean().reset_index(name='Quantity_daily_mean')
-	#assign string type values "low"-"medium"-"high" to daily_df quantity means
-	for i, row in daily_df.iterrows():
-		if daily_df.loc[i, 'Quantity_daily_mean'] <= 1.5:
-        		daily_df.loc[i, 'Quantity_daily_mean'] = "low"
-		elif daily_df.loc[i, 'Quantity_daily_mean'] >= 1.5 and daily_df.loc[i, 'Quantity_daily_mean'] <= 2.5:
-			daily_df.loc[i, 'Quantity_daily_mean'] = "medium"
-		elif daily_df.loc[i, 'Quantity_daily_mean'] >= 2.5:
-			daily_df.loc[i, 'Quantity_daily_mean'] = "high"
-	#compute absolute frequences of the various quantity over 30 days (sum of each type of quantity / 30 days)
-	#first count the amount of low-medium-high quantity
-	frequency_df = daily_df.groupby(['Quantity_daily_mean'])['Quantity_daily_mean'].count().reset_index(name='Count')
-	#then calculate absolute frequency
-	for i, row in frequency_df.iterrows():
-		frequency_df.loc[i, 'Absolute_frequency'] = frequency_df.loc[i, 'Count']/30
-	#compute none frequency
-	none_quantity = 'none'
-	none_count = 30-(frequency_df['Count'].sum())
-	none_frequency = 1-(frequency_df['Absolute_frequency'].sum())
-
-	frequency_df.loc[frequency_df.index.max()+1] = [none_quantity, none_count, none_frequency]
-	#order rows according to quantity
-	frequency_df['Quantity_daily_mean'] = pd.Categorical(frequency_df['Quantity_daily_mean'],categories=['low','medium','high','none'])
-	frequency_df = frequency_df.sort_values('Quantity_daily_mean', ignore_index=True)
-	
-	#if bin is not contained in the area return array of absolute frequencies
-	absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
-	if id is None:
-		visualze_result(absolute_frequency_array)
-		return render_template('visualze_result.html')
-	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
-	else:
-		if absolute_frequency_array[3] >= 0.7:
-    			newItem = False
-		elif absolute_frequency_array[3] <= threshold[3]:
-    			newItem = True
-		elif absolute_frequency_array[0] >= threshold[0]:
-    			newItem = True
-		elif absolute_frequency_array[1] >= threshold[1]:
-    			newItem = True
-		elif absolute_frequency_array[2] >= threshold[2]:
-    			newItem = True
-		else:
-			newItem = False
-			
-		conn = get_dbConn()
-            	cur = conn.cursor()
-            	cur.execute(
-                	'INSERT INTO bin_cairns (critical) VALUES (%s) WHERE id_bin = %s AND infographic = 'false'', #bin_cairns or bin_townsville according to the dataset we want to use
-			(newItem, id)
-            	)
-            	cur.close()
-            	conn.commit()
-			    
-		return 
 def visualize_results(results):
 	#array for the x axis
-	val = np.array(['low','medium','high','none'])
-	col = np.array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
+	val = array(['low','medium','high','none'])
+	col = array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
 	plt.bar(val,results, color = col)
 	for i in range(4):
 		plt.axhline(y=threshold[i], color= col[i])
@@ -372,6 +310,75 @@ def visualize_results(results):
 	plt.savefig('/static/plot_image.eps', format='eps')
 	
 	return render_template('visualize_results.html')
+
+def analysis(data_geodf,id):
+	#data_geodf geodataframe with litter data contained in the selected area (or buffer)
+	#change quantity into numeric values to compute daily mean
+    for i, row in data_geodf.iterrows():
+        if data_geodf.loc[i, 'Quantity'] == "low":
+            data_geodf.loc[i, 'Quantity'] = "1"
+        elif data_geodf.loc[i, 'Quantity'] == "medium":
+            data_geodf.loc[i, 'Quantity'] = "2"
+        elif data_geodf.loc[i, 'Quantity'] == "high":
+            data_geodf.loc[i, 'Quantity'] = "3"
+    data_geodf['Quantity'] = pd.to_numeric(data_geodf['Quantity'])
+	#create a new dataframe with data grouped by date of creation and compute the mean according to the Quantity attribute
+	#we obtain a dataframe with two columns, one for Date_of_creation and one for quantity's mean, each row corresponds to a certain Date_of_creation
+    daily_df = data_geodf.groupby(['Date_of_creation'])['Quantity'].mean().reset_index(name='Quantity_daily_mean')
+	#assign string type values "low"-"medium"-"high" to daily_df quantity means
+    for i, row in daily_df.iterrows():
+        if daily_df.loc[i, 'Quantity_daily_mean'] <= 1.5:
+            daily_df.loc[i, 'Quantity_daily_mean'] = "low"
+        elif daily_df.loc[i, 'Quantity_daily_mean'] >= 1.5 and daily_df.loc[i, 'Quantity_daily_mean'] <= 2.5:
+            daily_df.loc[i, 'Quantity_daily_mean'] = "medium"
+        elif daily_df.loc[i, 'Quantity_daily_mean'] >= 2.5:
+            daily_df.loc[i, 'Quantity_daily_mean'] = "high"
+	#compute absolute frequences of the various quantity over 30 days (sum of each type of quantity / 30 days)
+	#first count the amount of low-medium-high quantity
+    frequency_df = daily_df.groupby(['Quantity_daily_mean'])['Quantity_daily_mean'].count().reset_index(name='Count')
+	#then calculate absolute frequency
+    for i, row in frequency_df.iterrows():
+        frequency_df.loc[i, 'Absolute_frequency'] = frequency_df.loc[i, 'Count']/30
+	#compute none frequency
+    none_quantity = 'none'
+    none_count = 30-(frequency_df['Count'].sum())
+    none_frequency = 1-(frequency_df['Absolute_frequency'].sum())
+    
+    frequency_df.loc[frequency_df.index.max()+1] = [none_quantity, none_count, none_frequency]
+	#order rows according to quantity
+    frequency_df['Quantity_daily_mean'] = pd.Categorical(frequency_df['Quantity_daily_mean'],categories=['low','medium','high','none'])
+    frequency_df = frequency_df.sort_values('Quantity_daily_mean', ignore_index=True)
+	
+	#if bin is not contained in the area return array of absolute frequencies
+    absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
+    if id is None:
+        visualize_results(absolute_frequency_array)
+        return render_template('visualze_result.html')
+	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
+    else:
+        if absolute_frequency_array[3] >= 0.7:
+            newItem = False
+        elif absolute_frequency_array[3] <= threshold[3]:
+            newItem = True
+        elif absolute_frequency_array[0] >= threshold[0]:
+            newItem = True
+        elif absolute_frequency_array[1] >= threshold[1]:
+            newItem = True
+        elif absolute_frequency_array[2] >= threshold[2]:
+            newItem = True
+        else:
+            newItem = False
+            
+        conn = get_dbConn()
+        cur = conn.cursor()
+        cur.execute(
+                	'INSERT INTO bins (critical) VALUES (%s) WHERE id_bin = %s AND infographic = "false"', 
+			(newItem, id)
+            	)
+        cur.close()
+        conn.commit()
+    return 
+
 
 # find bin by id
 def get_bin(id):
@@ -399,10 +406,10 @@ def update_bin(id):
     if load_logged_in_user():
         Bin= get_bin(id)
         if request.method == 'POST' :
-            infografic= request.form['infographic yes/no']
+            infographic= request.form['infographic']
             error = None
             
-            if not infografic :
+            if not infographic :
                 error = 'infographic is required is required!'
             if error is not None :
                 flash(error)
@@ -418,7 +425,7 @@ def update_bin(id):
                 conn.commit()
                 return redirect(url_for('index'))
         else :
-            return render_template('blog/update_bin.html', comment = comment)
+            return render_template('update_bin.html', Bin = Bin)
     else :
         error = 'Only loggedin users can updaete bins!'
         flash(error)
