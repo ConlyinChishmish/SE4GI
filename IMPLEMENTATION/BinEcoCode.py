@@ -84,6 +84,8 @@ def binsTable(locality):   #call this function in registration if it is made cor
     bins_gdf['lat'] = bins_gdf['geometry'].y
     # create the columns of datetime and set it
     bins_gdf['date'] = datetime.datetime(2018, 5, 1)
+    bins_gdf['buffer'] = None
+	
 
     #adding buffer attribute
     for i, row in bins_gdf.iterrows():
