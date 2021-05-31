@@ -10,13 +10,6 @@ from psycopg2 import (
 import requests
 import json
 
-import datetime
-from shapely.geometry import Point
-from shapely import geometry
-import pyproj
-from shapely.ops import transform
-from functools import partial
-
 #open the configuration parameter from a txt file the table
 myFile = open('dbConfig.txt')
 connStr = myFile.readline()
@@ -26,8 +19,7 @@ myFile.close()
 cleanup = (
         'DROP TABLE IF EXISTS pa_user CASCADE',
         'DROP TABLE IF EXISTS comments',
-        'DROP TABLE IF EXISTS bin_cairns',
-        'DROP TABLE IF EXISTS bin_townsville',
+        'DROP TABLE IF EXISTS bins',
         'DROP TABLE IF EXISTS litter',
         'DROP TABLE IF EXISTS pa_data'
         )
@@ -60,22 +52,7 @@ commands = (
     
         #table of bins
         """ 
-        CREATE TABLE bin_cairns(
-                bin_id SERIAL PRIMARY KEY,
-                bin_date DATE DEFAULT NOW(),
-                lon DOUBLE PRECISION NOT NULL,
-                lat DOUBLE PRECISION NOT NULL,
-                infographic BOOLEAN NOT NULL DEFAULT 'False',
-                infographic_date DATE DEFAULT NULL,
-                geom GEOMETRY,
-                buffer GEOMETRY,
-                critical BOOLEAN NOT NULL DEFAULT 'False'
-        )
-        """,
-    
-        #table of bins
-        """ 
-        CREATE TABLE bin_townsville(
+        CREATE TABLE bins(
                 bin_id SERIAL PRIMARY KEY,
                 bin_date DATE DEFAULT NOW(),
                 lon DOUBLE PRECISION NOT NULL,
@@ -88,6 +65,7 @@ commands = (
         )
         """
         )
+
 
 #create the connection with the database
 conn = connect(connStr)
@@ -107,7 +85,7 @@ dbD = connStr.split()
 dbD = [x.split('=') for x in dbD]
 engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
 
-engine = create_engine(engStr)   
+engine = create_engine(engStr)  
 
 #IMPORT DATA FROM EPICOLLECT
 # send the request to the API of Epicollect5
@@ -133,94 +111,6 @@ data_geodf = gpd.GeoDataFrame(data_df, geometry=gpd.points_from_xy(data_df.Longi
 
 # write the dataframe into postgreSQL
 data_geodf.to_postgis('litter', engine, if_exists = 'replace', index=False)
-
-#CREATING THE DATAFRAME OF THE BIN USING THE DATE FROM OSM AND UPDATE THE TABLE OF BINS
-#creating the function for computing buffer around bins
-
-def geodesic_point_buffer(lat, lon, radius):
-    local_azimuthal_projection = "+proj=aeqd +R=6371000 +units=m +lat_0={} +lon_0={}".format(lat, lon)
-    wgs84_to_aeqd = partial(pyproj.transform, pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"), pyproj.Proj(local_azimuthal_projection),)
-    aeqd_to_wgs84 = partial(pyproj.transform, pyproj.Proj(local_azimuthal_projection), pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),)
-    center = Point(float(lon), float(lat))
-    point_transformed = transform(wgs84_to_aeqd, center)
-    buffer = point_transformed.buffer(radius)
-    # Get the polygon with lat lon coordinates
-    circle_poly = transform(aeqd_to_wgs84, buffer)
-    return circle_poly
-
-#Town of CAIRNS
-#opening the file and save it in a daframe
-filegeojson_cairns = open("data/Waste_basket_Cairns.geojson")
-binCairns_gdf = gpd.read_file(filegeojson_cairns)
-filegeojson_cairns.close()
-#extract the usefull columns
-binCairns_gdf = binCairns_gdf[['full_id','geometry']]
-#rename id
-for i in range(len(binCairns_gdf)):
-    binCairns_gdf.loc[i,'full_id'] = i
-# create the columns of longitude and latitude from the geometry attribute
-binCairns_gdf['lon'] = binCairns_gdf['geometry'].x
-binCairns_gdf['lat'] = binCairns_gdf['geometry'].y
-# create the columns of datetime and set it
-binCairns_gdf['date'] = datetime.datetime(2018, 5, 1)
-#adding buffer attribute
-#adding buffer attribute
-for i, row in binCairns_gdf.iterrows():
-    binCairns_gdf.loc[i, 'buffer'] = geodesic_point_buffer(binCairns_gdf.loc[i, 'lat'], binCairns_gdf.loc[i, 'lon'], 500.0)
-
-#import to PostgreSQL
-binCairns_gdf.to_postgis('cairns_temp', engine, if_exists = 'replace', index=False)
-
-#Town of TOWNSVILLE
-#opening the file and save it in a daframe
-filegeojson_townsville = open("data/Waste_basket_Townsville.geojson")
-binTownsville_gdf = gpd.read_file(filegeojson_townsville)
-filegeojson_townsville.close()
-#extract the usefull columns
-binTownsville_gdf = binTownsville_gdf[['full_id','geometry']]
-#rename id 
-for i in range(len(binTownsville_gdf)):
-    binTownsville_gdf.loc[i,'full_id'] = i
-# create the columns of longitude and latitude from the geometry attribute
-binTownsville_gdf['lon'] = binTownsville_gdf['geometry'].x
-binTownsville_gdf['lat'] = binTownsville_gdf['geometry'].y
-# create the columns of datetime and set it
-binTownsville_gdf['date'] = datetime.datetime(2018, 5, 1)
-#adding buffer attribute
-for i, row in binTownsville_gdf.iterrows():
-    binTownsville_gdf.loc[i, 'buffer'] = geodesic_point_buffer(binTownsville_gdf.loc[i, 'lat'], binTownsville_gdf.loc[i, 'lon'], 500.0)
-
-#import in PostgreSQL
-binTownsville_gdf.to_postgis('townsville_temp', engine, if_exists = 'replace', index=False)
-
-# creating the query command to insert data into DB original bins' tables from temporary bins' table
-insert_query = ("""
-    INSERT INTO bin_cairns (bin_id,lon,lat,geom,bin_date,buffer)
-    SELECT full_id,lon,lat,geometry,date,buffer FROM cairns_temp;
-    """,
-    """
-    INSERT INTO bin_townsville (bin_id,lon,lat,geom,bin_date,buffer)
-    SELECT full_id,lon,lat,geometry,date,buffer FROM townsville_temp;
-    """)
-# drop temporary bins' tables
-cleanup_temp = (
-        'DROP TABLE IF EXISTS cairns_temp',
-        'DROP TABLE IF EXISTS townsville_temp'
-        )
-
-# Connect to the database and make a cursor
-conn = connect(connStr)
-cur = conn.cursor()
-
-# Execution of the insert query and clean up of temporary tables
-for command in insert_query :
-    cur.execute(command)
-for command in cleanup_temp :
-    cur.execute(command)
-    
-cur.close()
-conn.commit()
-conn.close()
 
 #CREATING DATAFRAME FOR MUNICIPALITIES CORRESPONDING POSTCODES IN ALL AUSTRALIA
 #opening the file and save it in a daframe
