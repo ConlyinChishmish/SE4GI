@@ -31,6 +31,14 @@ app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
 app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
 
+def customized_engine() #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
+    # build the string for the customized engine
+    dbD = connStr.split()
+    dbD = [x.split('=') for x in dbD]
+    engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
+
+    return create_engine(engStr)
+
 def get_dbConn():
     if 'dbConn' not in g:
         myFile = open('dbConfig.txt')
@@ -75,14 +83,8 @@ def binsTable(locality):   #call this function in registration if it is made cor
         bins_gdf.loc[i, 'buffer'] = geodesic_point_buffer(bins_gdf.loc[i, 'lat'], bins_gdf.loc[i, 'lon'], 500.0)
 
     #setup db connection 
-    #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
-    # build the string for the customized engine
-    dbD = connStr.split()
-    dbD = [x.split('=') for x in dbD]
-    engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
-
-    engine = create_engine(engStr)
-    
+    engine = customized_engine()
+	
     #import in PostgreSQL
     bins_gdf.to_postgis('bins_temp', engine, if_exists = 'replace', index=False)
 
