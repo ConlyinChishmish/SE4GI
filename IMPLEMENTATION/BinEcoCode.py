@@ -10,7 +10,7 @@ from psycopg2 import (
         connect
 )
 
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 
 from numpy import array
 
