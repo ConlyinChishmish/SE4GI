@@ -332,6 +332,39 @@ def analysis(data_geodf,id):
             	conn.commit()
 			    
 		return 
+def visualize_results(results):
+	#array for the x axis
+	val = np.array(['low','medium','high','none'])
+	col = np.array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
+	plt.bar(val,results, color = col)
+	for i in range(4):
+		plt.axhline(y=threshold[i], color= col[i])
+	plt.ylim(0,1)
+	plt.title("Absolute frequency of quantiy and its threshold")
+	plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+	
+	#save the plot in a image
+	plt.savefig('/static/plot_image.eps', format='eps')
+	
+	return render_template('visualize_results.html')
+		
+	
+@app.route('/help_us')
+def help_us():
+	
+    conn = get_dbConn()   
+    cur = conn.cursor()
+    cur.execute(
+            """SELECT p.postal_code, c.comment_id, c.created, c.title, c.body 
+               FROM pa_user AS p, comments AS c WHERE  
+                    p.postal_code = c.author_id"""
+                    )
+    posts = cur.fetchall()
+    cur.close()
+    conn.commit()
+    conn.close()
+    load_logged_in_user()
+    return render_template('help_us/index_help.html', posts=posts)
 
 @app.route('/create_comment', methods=('GET', 'POST'))
 def create_comment():
