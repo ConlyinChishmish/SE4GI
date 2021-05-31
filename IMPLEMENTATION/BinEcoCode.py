@@ -19,6 +19,13 @@ import pyproj
 from shapely.ops import transform
 from functools import partial
 
+import osmnx as ox
+import matplotlib.pyplot as plt
+import datetime
+
+from sqlalchemy import create_engine
+
+
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
@@ -51,10 +58,50 @@ def geodesic_point_buffer(lat, lon, radius):
     return circle_poly
 
 #creating the function for configurating bins table according to registered PA (we retrieve data from OSM)
-def geodesic_point_buffer(lat, lon, radius):
-    
+def binsTable(locality):   #call this function in registration if it is made correctly bin_table(municipality)
+    locality =  locality + ", Australia"
+    tags = {'amenity': 'waste_basket'}
+    binsOSM = ox.geometries_from_place(locality, tags)
+    bins_gdf = gpd.GeoDataFrame(binsOSM)
 
- #Add your function here
+    # create the columns of longitude and latitude from the geometry attribute
+    bins_gdf['lon'] = bins_gdf['geometry'].x
+    bins_gdf['lat'] = bins_gdf['geometry'].y
+    # create the columns of datetime and set it
+    bins_gdf['date'] = datetime.datetime(2018, 5, 1)
+
+    #adding buffer attribute
+    for i, row in bins_gdf.iterrows():
+        bins_gdf.loc[i, 'buffer'] = geodesic_point_buffer(bins_gdf.loc[i, 'lat'], bins_gdf.loc[i, 'lon'], 500.0)
+
+    #setup db connection 
+    #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
+    # build the string for the customized engine
+    dbD = connStr.split()
+    dbD = [x.split('=') for x in dbD]
+    engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
+
+    engine = create_engine(engStr)
+    
+    #import in PostgreSQL
+    bins_gdf.to_postgis('bins_temp', engine, if_exists = 'replace', index=False)
+
+    #add data to DB bins table using the temporary table
+    conn = get_dbConn()
+    cur = conn.cursor()
+    cur.execute(
+        'INSERT INTO bins (lon,lat,geom,bin_date,buffer) SELECT lon,lat,geometry,date,buffer FROM bins_temp'
+    )
+    cur.execute(
+        'DROP TABLE IF EXISTS bins_temp'
+    )
+    cur.close()
+    conn.commit()
+    conn.close()
+    
+    return
+
+
  #registration
 @app.route('/register', methods=('GET', 'POST'))
 def register():
@@ -98,6 +145,9 @@ def register():
             )
             cur.close()
             conn.commit()
+	
+	    binsTable(municipality) 
+		
             return redirect(url_for('login'))
 
         flash(error)
