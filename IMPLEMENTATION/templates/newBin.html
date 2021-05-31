@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}New bin{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<body style="background-image: url('static/pete-willis-7XjahX2diCA-unsplash.jpg');"></body>
+  <form method="post">
+    <div class="formClass">
+        <label for="bin_id"> Bin_id</label>
+        <input name="bin_id" id="bin_id" value="{{ request.form['bin_id'] }}" required>    
+    </div>
+    <div class="formClass">
+        <label for="lon">Longitude</label>
+        <input name="lon" id="lon" value="request.form['lon'] }}" required>
+        <br>
+    </div>
+    <div class="formClass">
+        <label for="lat">Latitude</label>
+        <input name="lat" id="lat" value="request.form['lat'] }}" required>
+        <br>
+    </div>
+    <div class="formClass">
+        <input type="radio" id="yes" name="inphographic" value="yes">
+        <label for="yes">Yes</label><br>
+        <input type="radio" id="no" name="inphographic" value="no">
+        <label for="no">No</label><br>
+    </div>
+    
+    <input type="submit" value="Save">
+  </form>
+{% endblock %}
