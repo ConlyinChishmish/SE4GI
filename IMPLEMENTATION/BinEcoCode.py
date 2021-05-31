@@ -249,7 +249,8 @@ def analysis(data_geodf,id):
 	#if bin is not contained in the area return array of absolute frequencies
 	absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
 	if id is None:
-		return absolute_frequency_array
+		visualze_result(absolute_frequency_array)
+		return render_template('visualze_result.html')
 	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
 	else:
 		if absolute_frequency_array[3] >= 0.7:
