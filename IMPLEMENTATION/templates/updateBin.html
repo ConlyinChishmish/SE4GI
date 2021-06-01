@@ -1,1 +1,55 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 31 21:51:44 2021
 
+@author: arya
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 31 20:06:55 2021
+
+@author: arya
+"""
+
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Edit "{{ post[3] }}"{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<body style="background-image: url('static/pete-willis-7XjahX2diCA-unsplash.jpg');"></body>
+  <form method="post">
+    <label for="bin_id">Bin_id:</label>
+    <input name="bin_id" id="bin_id" value=" " required>
+    
+
+    
+    <div class="formClass">
+           <label for="please choose quantity">plaese choose quantity</label><br>
+           <input type="radio" id="low" name="inphographic" value="low">
+           <label for="low">low</label><br>
+           <input type="radio" id="medium" name="inphographic" value="medium">
+           <label for="medium">med</label><br>
+           <input type="radio" id="high" name="inphographic" value="high">
+           <label for="high">high</label><br>
+    </div>
+    
+    <label for="comment:">comment:</label>
+    <input name="comment" id="comment" value=" " required>
+    
+    <div class="formClass">
+        <label for=" Are you sure">Are you sure?</label><br>
+        <input type="radio" id="yes" name="inphographic" value="yes">
+        <label for="yes">Yes</label><br>
+        <input type="radio" id="no" name="inphographic" value="no">
+        <label for="no">No</label><br>
+    </div>    
+     <input type="submit" value="Save">
+  </form>
+  <hr>
+  <form action="{{ url_for('delete', id=post[0]) }}" method="post">
+    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+  </form>
+{% endblock %}
