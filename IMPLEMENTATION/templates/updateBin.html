@@ -26,16 +26,6 @@ Created on Mon May 31 20:06:55 2021
     
 
     
-    <div class="formClass">
-           <label for="please choose quantity">plaese choose quantity</label><br>
-           <input type="radio" id="low" name="inphographic" value="low">
-           <label for="low">low</label><br>
-           <input type="radio" id="medium" name="inphographic" value="medium">
-           <label for="medium">med</label><br>
-           <input type="radio" id="high" name="inphographic" value="high">
-           <label for="high">high</label><br>
-    </div>
-    
     <label for="comment:">comment:</label>
     <input name="comment" id="comment" value=" " required>
     
@@ -49,7 +39,5 @@ Created on Mon May 31 20:06:55 2021
      <input type="submit" value="Save">
   </form>
   <hr>
-  <form action="{{ url_for('delete', id=post[0]) }}" method="post">
-    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
-  </form>
+ 
 {% endblock %}
