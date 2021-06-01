@@ -10,17 +10,17 @@
 {% endblock %}
 
 {% block content %}
-<body bgcolor="#ffebcd">
+<body bgcolor= "#d3d3d3">
 
-  {% for post in posts %}
+  {% for comment in comments %}
     <article class="post">
           <header>
               <div>
-          <h1>{{ post[3] }}</h1>
+          <h1>{{ comment[3] }}</h1>
           <div class = "about">by {{ comment[0] }} on {{ comment[2].strftime('%Y-%m-%d') }}</div>
         </div>
         {% if g.user[1] == comment[0] %}
-        <a class = "action" href="{{ url_for('updateComment', id=post[1]) }}">Edit</a>
+        <a class = "action" href="{{ url_for('updateComment', id=comment[1]) }}">Edit</a>
         {% endif %}
       </header>
       <p class = "body" bgcolor="#bbd0c9">{{ comment[4] }}</p>
@@ -33,3 +33,5 @@
     {% endif %}
   {% endfor %}
 {% endblock %}
+
+
