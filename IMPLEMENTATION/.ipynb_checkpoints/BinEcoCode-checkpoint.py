@@ -241,6 +241,7 @@ def new_bin():
     if request.method == 'POST' :
         lon = request.form['lon']
         lat = request.form['lat']
+        infographic = request.form['infographic']
         
         geom = Point(float(lon), float(lat))
         buffer = geodesic_point_buffer(lat, lon, 500.0)
@@ -260,25 +261,21 @@ def new_bin():
             return redirect(url_for('new_bin'))
         #everything in the form is ok, database connection is allowed
         else : 
-            data = [[lon,lat,geom,buffer]]
-            bin_gdf = gpd.GeoDataFrame(data,columns = ['lon','lat','geometry','buffer'])
-            engine = customized_engine()
-            bin_gdf.to_postgis('bin_temp', engine, if_exists = 'replace', index=False)
-            
+            command = ( #""" INSERT INTO bins (lon, lat, infographic) VALUES (%s,%s,%s)""",
+                            # """ INSERT INTO bins (geom) VALUES (ST_Point(%(geom)s))"""
+                             """ INSERT INTO bins (buffer) VALUES (ST_Polygon(%(buffer)s))"""
+                             )
+            values = ((buffer))
+            #(lon, lat, infographic),(geom),
             conn = get_dbConn()
             cur = conn.cursor()
-            cur.execute(
-                    'INSERT INTO bins (lon,lat,geom,buffer) SELECT cast(lon as double precision),cast(lat as double precision),geometry,buffer FROM bin_temp'
-                    )
-            cur.execute(
-            'DROP TABLE IF EXISTS bin_temp'
-            )
+            for i in range(len(command)):
+                cur.execute(command[i], values[i])
             cur.close()
             conn.commit()
-            conn.close()
             return redirect(url_for('index'))
     else :
-        return render_template('new_bin.html')          
+        return render_template('new_bin.html')       
  
 #global variable constant values   
 threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
