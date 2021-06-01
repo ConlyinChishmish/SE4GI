@@ -1,4 +1,4 @@
-#function for retrieving PA boundaries data from OSM
+#function for retrieving PA boundaries data from OSM (to be called in registration after bintable())
 def boundary(locality):
     locality =  locality + ", Australia"
     tags = {"boundary": "administrative"} 
