@@ -238,48 +238,53 @@ def index():
 # UC.3 Pa enters new data about the bin
 @app.route('/new_bin', methods=('GET', 'POST'))
 def new_bin():
-    if request.method == 'POST' :
-        lon = request.form['lon']
-        lat = request.form['lat']
+    if load_logged_in_user():
+        if request.method == 'POST' :
+            lon = request.form['lon']
+            lat = request.form['lat']
         
-        geom = Point(float(lon), float(lat))
-        buffer = geodesic_point_buffer(lat, lon, 500.0)
-        error = None
+            geom = Point(float(lon), float(lat))
+            buffer = geodesic_point_buffer(lat, lon, 500.0)
+            error = None
        
-        # check if the data inserted are correct
-        if (not lon or not lat):
-            error = '*this data is required!'
-        elif (float(lat)< -90 or float(lat)>90):
-            error ='Please insert a valid value for the latitude -90<= lat <=90'
-        elif(float(lon)<0 or float(lon)>=360):
-            error ='Please insert a valid value for the longitude 0<= lon <360'
+            # check if the data inserted are correct
+            if (not lon or not lat):
+                error = '*this data is required!'
+            elif(float(lat)< -90 or float(lat)>90):
+                error ='Please insert a valid value for the latitude -90<= lat <=90'
+            elif(float(lon)<0 or float(lon)>=360):
+                error ='Please insert a valid value for the longitude 0<= lon <360'
          
-        #check if something went wrong in compiling the form  
-        if error is not None :
-            flash(error)
-            return redirect(url_for('new_bin'))
-        #everything in the form is ok, database connection is allowed
-        else : 
-            data = [[lon,lat,geom,buffer]]
-            bin_gdf = gpd.GeoDataFrame(data,columns = ['lon','lat','geometry','buffer'])
-            engine = customized_engine()
-            bin_gdf.to_postgis('bin_temp', engine, if_exists = 'replace', index=False)
+            #check if something went wrong in compiling the form  
+            if error is not None :
+                flash(error)
+                return redirect(url_for('new_bin'))
+            #everything in the form is ok, database connection is allowed
+            else : 
+                data = [[lon,lat,geom,buffer]]
+                bin_gdf = gpd.GeoDataFrame(data,columns = ['lon','lat','geometry','buffer'])
+                engine = customized_engine()
+                bin_gdf.to_postgis('bin_temp', engine, if_exists = 'replace', index=False)
             
-            conn = get_dbConn()
-            cur = conn.cursor()
-            cur.execute(
-                    'INSERT INTO bins (lon,lat,geom,buffer) SELECT cast(lon as double precision),cast(lat as double precision),geometry,buffer FROM bin_temp'
-                    )
-            cur.execute(
-            'DROP TABLE IF EXISTS bin_temp'
-            )
-            cur.close()
-            conn.commit()
-            conn.close()
-            return redirect(url_for('index'))
-    else :
-        return render_template('new_bin.html')          
- 
+                conn = get_dbConn()
+                cur = conn.cursor()
+                cur.execute(
+                        'INSERT INTO bins (lon,lat,geom,buffer) SELECT cast(lon as double precision),cast(lat as double precision),geometry,buffer FROM bin_temp'
+                        )
+                cur.execute(
+                        'DROP TABLE IF EXISTS bin_temp'
+                        )
+                cur.close()
+                conn.commit()
+                return redirect(url_for('index'))
+        else :
+            return render_template('new_bin.html')          
+    else:
+        error = 'Only loggedin users can updaete bins!'
+        flash(error)
+        return redirect(url_for('interactive_map'))
+    
+    
 #global variable constant values   
 threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
@@ -442,7 +447,7 @@ def update_bin(id):
                 return redirect(url_for('index'))
         else :
             return render_template('update_bin.html', Bin = Bin)
-    else :
+    else:
         error = 'Only loggedin users can updaete bins!'
         flash(error)
         return redirect(url_for('interactive_map'))
@@ -480,7 +485,7 @@ def create_comment():
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
-                cur.execute('INSERT INTO post (title, body, author_id) VALUES (%s, %s, %s)', 
+                cur.execute('INSERT INTO comments (title, body, author_id) VALUES (%s, %s, %s)', 
                             (title, body, g.user[0])
                             )
                 cur.close()
@@ -489,7 +494,7 @@ def create_comment():
         else :
             return render_template('help_us/createComment.html')
     else :
-        error = 'Only loggedin users can insert comments!'
+        error = 'Only logged in users can insert comments!'
         flash(error)
         return redirect(url_for('login'))
    
