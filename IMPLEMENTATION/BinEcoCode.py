@@ -281,7 +281,7 @@ def new_bin():
         return render_template('new_bin.html')          
  
 #global variable constant values   
-g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
@@ -454,17 +454,17 @@ def help_us():
     conn = get_dbConn()   
     cur = conn.cursor()
     cur.execute(
-            """SELECT p.postal_code, c.comment_id, c.created, c.title, c.body 
+            """SELECT c.comment_id, p.postal_code, c.created, c.title, c.body 
                FROM pa_user AS p, comments AS c WHERE  
                     p.postal_code = c.author_id"""
                     )
-    posts = cur.fetchall()
+    comments = cur.fetchall()
     cur.close()
     conn.commit()
     load_logged_in_user()
-    return render_template('help_us/index_help.html', posts=posts)
+    return render_template('help_us/index_help.html', comments=comments)
 
-@app.route('/create_comment', methods=('GET', 'POST'))
+@app.route('/createComment', methods=('GET', 'POST'))
 def create_comment():
     if load_logged_in_user():
         if request.method == 'POST' :
@@ -476,7 +476,7 @@ def create_comment():
                 error = 'Title is required!'
             if error is not None :
                 flash(error)
-                return redirect(url_for('create_comment'))
+                return redirect(url_for('createComment'))
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
@@ -485,7 +485,7 @@ def create_comment():
                             )
                 cur.close()
                 conn.commit()
-                return redirect(url_for('index'))
+                return redirect(url_for('help_us'))
         else :
             return render_template('help_us/createComment.html')
     else :
@@ -512,7 +512,7 @@ def get_comment(id):
 
     return comment
 
-@app.route('/<int:id>/update_comment', methods=('GET', 'POST'))
+@app.route('/<int:id>/updateComment', methods=('GET', 'POST'))
 def update_comment(id):
     if load_logged_in_user():
         comment = get_comment(id)
@@ -525,17 +525,17 @@ def update_comment(id):
                 error = 'Title is required!'
             if error is not None :
                 flash(error)
-                return redirect(url_for('update_comment'))
+                return redirect(url_for('update_Comment'))
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
-                cur.execute('UPDATE comment SET title = %s, body = %s'
+                cur.execute('UPDATE comments SET title = %s, body = %s'
                                'WHERE comment_id = %s', 
                                (title, body, id)
                                )
                 cur.close()
                 conn.commit()
-                return redirect(url_for('index'))
+                return redirect(url_for('help_us'))
         else :
             return render_template('help_us/updateComment.html', comment = comment)
     else :
@@ -543,13 +543,13 @@ def update_comment(id):
         flash(error)
         return redirect(url_for('login'))
 
-@app.route('/<int:id>/delete_comment', methods=('POST',))
+@app.route('/<int:id>/deleteComment', methods=('POST',))
 def delete_comment(id):
     conn = get_dbConn()                
     cur = conn.cursor()
     cur.execute('DELETE FROM comments WHERE comment_id = %s', (id,))
     conn.commit()
-    return redirect(url_for('index'))        
+    return redirect(url_for('help_us'))        
         
         
 if __name__ == '__main__':
