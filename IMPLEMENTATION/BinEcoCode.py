@@ -266,7 +266,7 @@ def new_bin():
         return render_template('new_bin.html')       
  
 #global variable constant values   
-threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+g.threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
