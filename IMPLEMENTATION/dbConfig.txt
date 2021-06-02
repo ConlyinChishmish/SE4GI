@@ -1,1 +1,1 @@
-dbname=binecoDB user=postgres password=r3df0x
+dbname=binecoDB user=postgres password=ms199675
