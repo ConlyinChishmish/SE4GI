@@ -118,9 +118,7 @@ fileTxt = open("data/df_australia_postcode.csv")
 df_au_postcode = pd.read_csv(fileTxt,sep=',')
 fileTxt.close()
 
-#select useful columns
-df_au_postcode = df_au_postcode.iloc[:, 2:4]
-df_au_postcode.columns = ['postal_code','locality']
+df_au_postcode.rename(columns = {'postcode': 'postal_code', 'long': 'lon'}, inplace = True)
 
 #import to PostgreSQL
 df_au_postcode.to_sql('pa_data', engine, if_exists = 'replace', index=False)
