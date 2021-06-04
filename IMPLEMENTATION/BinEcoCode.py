@@ -90,8 +90,9 @@ def cityBoundary(locality):
     boundary_gdf=explode(boundary_gdf)
     #searching for boundaries referring to PA
     query_search ='short_name == "Cairns"'
+    global city_boundaries 
     city_boundaries = boundary_gdf.query(query_search)
-    global city_boundaries = city_boundaries.reset_index(drop=True)
+    city_boundaries = city_boundaries.reset_index(drop=True)
     return
  
 #creating the function for computing buffer around bins
@@ -321,7 +322,8 @@ def new_bin():
     
     
 #global variable constant values   
-global threshold = np.array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+global threshold 
+threshold = np.array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
