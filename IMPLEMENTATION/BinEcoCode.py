@@ -345,7 +345,7 @@ def query_by_area(area):
     
     return filtered_litter
 
-@app.route('/interactiveMap')         
+@app.route('/interactive_map')         
 def map_function():  
     if load_logged_in_user():
         conn = get_dbConn()
@@ -358,7 +358,7 @@ def map_function():
         conn.commit()
         city_boundaries = cityBoundary(res[1])
         im.interactive_map(city_boundaries)
-        return render_template('interactiveMap.html')
+        return render_template('interactive_map.html')
     else:
         error = 'Only logged in users can visualise map!'
         flash(error)
