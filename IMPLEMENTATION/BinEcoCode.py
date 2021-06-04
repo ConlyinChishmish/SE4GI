@@ -340,26 +340,23 @@ def query_temp():
 
 # query by area function
 def query_by_area(area):
-    engine = customized_engine()
-    # putting all the points into a geodataframe
-    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
-    # select the points contained in the area
-    filtered_litter = gdf_litt[gdf_litt.geometry.within(area)]
+    litt_temp = query_temp()
+    filtered_litter = litt_temp[litt_temp.geometry.within(area)]
     
     return filtered_litter
 
 @app.route('/interactive_map')         
 def map_function():  
     if load_logged_in_user():
-	conn = get_dbConn()
+        conn = get_dbConn()
         cur = conn.cursor()
         cur.execute(
-            'SELECT municipality FROM pa_user WHERE postal_code = %s', (g.user[0],)
+            'SELECT * FROM pa_user WHERE postal_code = %s', (g.user[0],)
         )
-        municipality = cur.fetchone()
+        res = cur.fetchone()
         cur.close()
         conn.commit()
-	city_boundaries = cityBoundary(municipality)
+        city_boundaries = cityBoundary(res[1])
         im.interactive_map(city_boundaries)
         return render_template('interactive_map.html')
     else:

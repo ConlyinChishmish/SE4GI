@@ -1,5 +1,5 @@
 from flask import (
-    url_for
+    redirect, url_for
 )
 
 import geopandas as gpd
@@ -9,7 +9,7 @@ import datetime
 from sqlalchemy import create_engine
 
 from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, LabelSet, HoverTool, OpenURL, TapTool
+from bokeh.models import ColumnDataSource, LabelSet, HoverTool
 from bokeh.models.tools import TapTool
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.io import output_notebook, show
@@ -156,9 +156,9 @@ def interactive_map(city_boundaries):
     p2.axis.visible = False
 
     #ADDING TAPTOOL
-    url = url_for('visualize_results')
+    
     taptool = p2.select(type=TapTool)
-    taptool.callback = OpenURL(url=url)
+    taptool.callback = redirect(url_for('create_image'))
 
     p2.add_tile(get_provider(Vendors.OSM))
 
