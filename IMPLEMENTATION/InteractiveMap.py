@@ -35,6 +35,16 @@ def getPointCoords(rows, geom, coord_type):
     elif coord_type == 'y':
         return rows[geom].y
 
+# query by area function
+def query_by_area(area):
+    engine = customized_engine()
+    # putting all the points into a geodataframe
+    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    # select the points contained in the area
+    filtered_litter = gdf_litt[gdf_litt.geometry.within(area)]
+    
+    return filtered_litter
+
 def interactive_map(city_boundaries):
 	
     engine = customized_engine()
