@@ -37,11 +37,9 @@ def getPointCoords(rows, geom, coord_type):
 
 # query by area function
 def query_by_area(area):
-    engine = customized_engine()
-    # putting all the points into a geodataframe
-    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    litt_temp = query_temp()
     # select the points contained in the area
-    filtered_litter = gdf_litt[gdf_litt.geometry.within(area)]
+    filtered_litter = litt_temp[litt_temp.geometry.within(area)]
     
     return filtered_litter
 
@@ -79,11 +77,6 @@ def interactive_map(city_boundaries):
         filtered_litter_gdf = query_by_area(area)
         litter_gdf = litter_gdf.append(filtered_litter_gdf, ignore_index=True)
     litter_gdf.drop_duplicates(subset='geometry', keep = 'first', ignore_index = True)
-    t_srs = 4326
-    litter_gdf.set_geometry('geometry', crs=(u'epsg:'+str(t_srs)), inplace=True)
-    
-    #filter litter data according to a 30 days temporal window starting from last record Date_of_creation
-    litter_gdf = query_temp()
     t_srs = 4326
     litter_gdf.set_geometry('geometry', crs=(u'epsg:'+str(t_srs)), inplace=True)
 
