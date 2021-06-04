@@ -200,7 +200,7 @@ def register():
             conn.commit()
 	
             binsTable(municipality) 
-	    cityBoundary(municipality)
+            cityBoundary(municipality)
             return redirect(url_for('login'))
         flash(error)
 
