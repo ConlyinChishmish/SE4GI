@@ -14,6 +14,19 @@ from bokeh.io import output_notebook, show
 from bokeh.layouts import row
 output_notebook ()
     
+def customized_engine(): #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
+    # build the string for the customized engine
+    #open the configuration parameter from a txt file the table
+    myFile = open('dbConfig.txt')
+    connStr = myFile.readline()
+    myFile.close()
+    
+    dbD = connStr.split()
+    dbD = [x.split('=') for x in dbD]
+    engStr = 'postgresql://'+ dbD[1][1]+':'+ dbD[2][1] + '@localhost:5432/' + dbD[0][1]
+
+    return create_engine(engStr)
+
 #create a function to extract coordinates from the geodataframe
 def getPointCoords(rows, geom, coord_type):
 #Calculates coordinates ('x' or 'y') of a Point geometry
