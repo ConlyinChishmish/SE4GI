@@ -353,7 +353,7 @@ def query_by_area(area):
     
     return filtered_litter
 
-@app.route('/interactive_map', methods=('GET'))          
+@app.route('/interactive_map')          
 def map_function():  
     if load_logged_in_user():
         im.interactive_map()
