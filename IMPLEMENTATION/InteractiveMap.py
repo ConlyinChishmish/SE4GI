@@ -35,7 +35,7 @@ def getPointCoords(rows, geom, coord_type):
     elif coord_type == 'y':
         return rows[geom].y
 
-def interactive_map():
+def interactive_map(city_boundaries):
 	
     engine = customized_engine()
 
