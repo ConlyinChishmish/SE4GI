@@ -22,7 +22,7 @@ def getPointCoords(rows, geom, coord_type):
     elif coord_type == 'y':
         return rows[geom].y
 
-@app.route('/<int:id>/interactive_map', methods=('GET'))
+@app.route('/interactive_map', methods=('GET'))
 def interactive_map():
 	
     engine = customized_engine()
