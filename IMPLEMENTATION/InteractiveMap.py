@@ -161,8 +161,9 @@ def interactive_map(city_boundaries):
 
     #ADDING TAPTOOL
     
+    url = 'http://127.0.0.1:5000/create_image'
     taptool = p2.select(type=TapTool)
-    taptool.callback = OpenURL(url = url_for('create_image'))
+    taptool.callback = OpenURL(url=url)
 
     p2.add_tile(get_provider(Vendors.OSM))
 
