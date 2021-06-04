@@ -6,8 +6,6 @@ import geopandas as gpd
 
 from sqlalchemy import create_engine
 
-from shapely import geometry
-
 from bokeh.plotting import figure, show, output_file
 from bokeh.models import ColumnDataSource, LabelSet, HoverTool, OpenURL, TapTool
 from bokeh.models.tools import TapTool
