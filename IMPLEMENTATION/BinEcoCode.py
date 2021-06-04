@@ -10,8 +10,12 @@ from psycopg2 import (
         connect
 )
 
+from sqlalchemy import create_engine 
+
 from shapely import geometry
 from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+from shapely.geometry.multipolygon import MultiPolygon  
 
 import numpy as np
 from numpy import array
@@ -26,11 +30,6 @@ import geopandas as gpd
 import osmnx as ox
 import matplotlib.pyplot as plt
 import datetime 
-
-from sqlalchemy import create_engine
-
-from shapely.geometry.polygon import Polygon
-from shapely.geometry.multipolygon import MultiPolygon   
 
 
 # Create the application instance
