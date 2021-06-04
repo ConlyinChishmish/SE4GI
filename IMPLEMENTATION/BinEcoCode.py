@@ -12,6 +12,7 @@ from psycopg2 import (
 
 from shapely.geometry import Point
 
+import numpy as np
 from numpy import array
 
 #from shapely import geometry
@@ -27,11 +28,14 @@ import datetime
 
 from sqlalchemy import create_engine
 
+from shapely.geometry.polygon import Polygon
+from shapely.geometry.multipolygon import MultiPolygon   
+
 
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
 # Set the secret key to some random bytes. Keep this really secret!
-app.secret_key = '_5#y2L"F4Q8z\n\xec]/'
+app.secret_key = '_5#y2L"F4Q8z\n\xec]/'                                                                   
 
 def customized_engine(): #NOTE: dbConfig.txt MUST be modified with the comfiguration of your DB
     # build the string for the customized engine
@@ -58,7 +62,37 @@ def close_dbConn():
     if 'dbConn' in g:
         g.dbComm.close()
         g.pop('dbConn')
-       
+ 
+#function that explode multypoligons of city boundaries gdf into polygons
+def explode(indf):
+    outdf = gpd.GeoDataFrame(columns=indf.columns)
+    for idx, row in indf.iterrows():
+        if type(row.geometry) == Polygon:
+            outdf = outdf.append(row,ignore_index=True)
+        if type(row.geometry) == MultiPolygon:
+            multdf = gpd.GeoDataFrame(columns=indf.columns)
+            recs = len(row.geometry)
+            multdf = multdf.append([row]*recs,ignore_index=True)
+            for geom in range(recs):
+                multdf.loc[geom,'geometry'] = row.geometry[geom]
+            outdf = outdf.append(multdf,ignore_index=True)
+    return outdf
+
+#function for retrieving PA boundaries data from OSM                                               
+def cityBoundary(locality):                                  
+    locality =  locality + ", Australia"
+    tags = {"boundary": "administrative"}
+    boundaryOSM = ox.geometries_from_place(locality, tags)
+    boundary_gdf = gpd.GeoDataFrame(boundaryOSM)
+    #extract useful columns
+    boundary_gdf = boundary_gdf.iloc[:, 0:10:9]
+    #explode multypoligons in polygons 
+    boundary_gdf=explode(boundary_gdf)
+    #searching for boundaries referring to PA
+    query_search ='short_name == "Cairns"'
+    city_boundaries = boundary_gdf.query(query_search)
+    global city_boundaries = city_boundaries.reset_index(drop=True)
+    return
  
 #creating the function for computing buffer around bins
 def geodesic_point_buffer(lat, lon, radius):
@@ -165,6 +199,7 @@ def register():
             conn.commit()
 	
             binsTable(municipality) 
+	    cityBoundary(municipality)
             return redirect(url_for('login'))
         flash(error)
 
@@ -286,14 +321,13 @@ def new_bin():
     
     
 #global variable constant values   
-threshold = array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
+global threshold = np.array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none 
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
 
 # query by temporal window
 def query_temp():
-    engine= customized_engine()
-    
+    engine = customized_engine()
     gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
     # cast on the data column
     gdf_litt['Date_of_creation'] = pd.to_datetime(gdf_litt['Date_of_creation'], format='%d/%m/%Y')
@@ -332,35 +366,42 @@ def visualize_results(results):
 	
 	return render_template('visualize_results.html')
 
-def analysis(data_geodf,id):
+#function that computes statistical analysis of litter data contained in a certain bin's buffer
+def statistycal_analysis(data_geodf,id):
+    #if there is no litter point in bin's buffer return 
+    if data_geodf.empty:       
+        return                                                                                                                           
 	#data_geodf geodataframe with litter data contained in the selected area (or buffer)
 	#change quantity into numeric values to compute daily mean
     for i, row in data_geodf.iterrows():
-        if data_geodf.loc[i, 'Quantity'] == "low":
+        if data_geodf.loc[i, 'Quantity'] == "Low":                       
             data_geodf.loc[i, 'Quantity'] = "1"
-        elif data_geodf.loc[i, 'Quantity'] == "medium":
+        elif data_geodf.loc[i, 'Quantity'] == "Medium":
             data_geodf.loc[i, 'Quantity'] = "2"
-        elif data_geodf.loc[i, 'Quantity'] == "high":
+        elif data_geodf.loc[i, 'Quantity'] == "High":
             data_geodf.loc[i, 'Quantity'] = "3"
     data_geodf['Quantity'] = pd.to_numeric(data_geodf['Quantity'])
+    print(data_geodf)
 	#create a new dataframe with data grouped by date of creation and compute the mean according to the Quantity attribute
 	#we obtain a dataframe with two columns, one for Date_of_creation and one for quantity's mean, each row corresponds to a certain Date_of_creation
     daily_df = data_geodf.groupby(['Date_of_creation'])['Quantity'].mean().reset_index(name='Quantity_daily_mean')
 	#assign string type values "low"-"medium"-"high" to daily_df quantity means
     for i, row in daily_df.iterrows():
         if daily_df.loc[i, 'Quantity_daily_mean'] <= 1.5:
-            daily_df.loc[i, 'Quantity_daily_mean'] = "low"
+            daily_df.loc[i, 'Quantity_daily_mean'] = "Low"
         elif daily_df.loc[i, 'Quantity_daily_mean'] >= 1.5 and daily_df.loc[i, 'Quantity_daily_mean'] <= 2.5:
-            daily_df.loc[i, 'Quantity_daily_mean'] = "medium"
+            daily_df.loc[i, 'Quantity_daily_mean'] = "Medium"
         elif daily_df.loc[i, 'Quantity_daily_mean'] >= 2.5:
-            daily_df.loc[i, 'Quantity_daily_mean'] = "high"
+            daily_df.loc[i, 'Quantity_daily_mean'] = "High"
 	#compute absolute frequences of the various quantity over 30 days (sum of each type of quantity / 30 days)
 	#first count the amount of low-medium-high quantity
     frequency_df = daily_df.groupby(['Quantity_daily_mean'])['Quantity_daily_mean'].count().reset_index(name='Count')
 	#then calculate absolute frequency
+    frequency_df['Absolute_frequency']=None                                                     
     for i, row in frequency_df.iterrows():
         frequency_df.loc[i, 'Absolute_frequency'] = frequency_df.loc[i, 'Count']/30
 	#compute none frequency
+    	#compute none frequency
     none_quantity = 'none'
     none_count = 30-(frequency_df['Count'].sum())
     none_frequency = 1-(frequency_df['Absolute_frequency'].sum())
@@ -371,34 +412,9 @@ def analysis(data_geodf,id):
     frequency_df = frequency_df.sort_values('Quantity_daily_mean', ignore_index=True)
 	
 	#if bin is not contained in the area return array of absolute frequencies
-    absolute_frequency_array = frequency_df['Absolute_frequency'].to_numpy()
-    if id is None:
-        visualize_results(absolute_frequency_array)
-        return render_template('visualze_result.html')
-	#if bin is contained in the area return boolean variable newItem (if TRUE --> put infographic)
-    else:
-        if absolute_frequency_array[3] >= 0.7:
-            newItem = False
-        elif absolute_frequency_array[3] <= threshold[3]:
-            newItem = True
-        elif absolute_frequency_array[0] >= threshold[0]:
-            newItem = True
-        elif absolute_frequency_array[1] >= threshold[1]:
-            newItem = True
-        elif absolute_frequency_array[2] >= threshold[2]:
-            newItem = True
-        else:
-            newItem = False
-            
-        conn = get_dbConn()
-        cur = conn.cursor()
-        cur.execute(
-                	'INSERT INTO bins (critical) VALUES (%s) WHERE id_bin = %s AND infographic = "false"', 
-			(newItem, id)
-            	)
-        cur.close()
-        conn.commit()
-    return 
+    absolute_frequency_df = frequency_df.loc[:, 'Absolute_frequency']
+    absolute_frequency_array = np.array(absolute_frequency_df).reshape(-1)
+    return absolute_frequency_array 
 
 
 # find bin by id
