@@ -1,143 +1,168 @@
-#function for retrieving PA boundaries data from OSM (to be called in registration after bintable())
-def boundary(locality):
-    locality =  locality + ", Australia"
-    tags = {"boundary": "administrative"} 
-    boundaryOSM = ox.geometries_from_place(locality, tags)
-    g.boundary_gdf = gpd.GeoDataFrame(boundaryOSM)
-    return
+from flask import (
+    Flask, url_for
+)
+
+from shapely import geometry
+
+import pandas as pd
+import geopandas as gpd
+
+from sqlalchemy import create_engine
 
 from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, HoverTool, LabelSet
-from bokeh.models.tools import LassoSelectTool, TapTool
-from bokeh.tile_providers import Vendors, get_provider
-from bokeh.io import output_notebook, curdoc
+from bokeh.models import ColumnDataSource, LabelSet, HoverTool, OpenURL, TapTool
+from bokeh.models.tools import TapTool
+from bokeh.tile_providers import get_provider, Vendors
+from bokeh.io import output_notebook, show
+from bokeh.layouts import row
 output_notebook ()
-
-
-def getPolyCoords(row, geom, coord_type):
-    #returns the coordinates ('x' or 'y') of edges of a Polygon exterior
-
-    # Parse the exterior of the coordinate
-    exterior = row[geom].exterior
-
+    
+#create a function to extract coordinates from the geodataframe
+def getPointCoords(rows, geom, coord_type):
+#Calculates coordinates ('x' or 'y') of a Point geometry
     if coord_type == 'x':
-        # Get the x coordinates of the exterior
-        return list( exterior.coords.xy[0] )
+        return rows[geom].x
     elif coord_type == 'y':
-        # Get the y coordinates of the exterior
-        return list( exterior.coords.xy[1] )
-
+        return rows[geom].y
   
-def interactive_map():	
-
-    #importing litter and bins data from DB
+def interactive_map():
+	
     engine = customized_engine()
-    bins_gdf = gpd.GeoDataFrame.from_postgis('bins', engine, geom_col='buffer')
-    litter_gdf = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
-	
-    #filter litter data according to the registered PA
-    cityBoundaries = boundary_gdf["geometry"][1]
-    litter_gdf = queryByArea(cityBoundaries)
 
+    bins_gdf = gpd.GeoDataFrame.from_postgis('bins', engine, geom_col='geom')
+    t_srs = 4326
+    bins_gdf.set_geometry('geom', crs=(u'epsg:'+str(t_srs)), inplace=True)
+    
+    original_litter_gdf = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    t_srs = 4326
+    original_litter_gdf.set_geometry('geometry', crs=(u'epsg:'+str(t_srs)), inplace=True)
+
+    
+    litter_gdf = gpd.GeoDataFrame(columns=original_litter_gdf.columns)
+    for i,row in city_boundaries.iterrows():
+        area = city_boundaries.loc[i,'geometry']
+        filtered_litter_gdf = query_by_area(area)
+        litter_gdf = litter_gdf.append(filtered_litter_gdf, ignore_index=True)
+    litter_gdf.drop_duplicates(subset='geometry', keep = 'first', ignore_index = True)
+    t_srs = 4326
+    litter_gdf.set_geometry('geometry', crs=(u'epsg:'+str(t_srs)), inplace=True)
+    
     #filter litter data according to a 30 days temporal window starting from last record Date_of_creation
-    litter_gdf = queryByTemp()
-
-    #define the critical bins (fill in the column critical in bins table (TRUE or FALSE))
-    for i, row in bins_gdf.iterrows():
-    #filter litter data (for each bin record's buffer select litter points included in it)
-        area = bins_gdf.loc[i, 'Buffer'][1]
-        filt_litter_gdf = queryByArea(area)
-        #make statistic analysis on filtered litter data to undestand if a bin is critical (if it is critical --> put an infographic)
-        id_bin = bins_gdf.loc[i, 'bin_id']
-        analysis(filt_litter_gdf, id_bin)
-	
-    #all data must have the same crs
-    litter_gdf["geometry"] = litter_gdf.to_crs(epsg=3857)
-    bins_gdf["geometry"] = bins_gdf.to_crs(epsg=3857)
-    bins_gdf["buffer"] = bins_gdf.to_crs(epsg=3857)  
-	
-    #creating two different gdf referring to critical and non-critical bins
-    critical_bins = bins_gdf.query('critical == True')
-    non_critical_bins = bins_gdf.query('critical == False')
+    litter_gdf = query_temp()
+    t_srs = 4326
+    litter_gdf.set_geometry('geometry', crs=(u'epsg:'+str(t_srs)), inplace=True)
 
     # Calculate x and y coordinates of litter points
-    litter_gdf['x'] = litter_gdf.apply(getPointCoords, geom='geometry', coord_type='x', axis=1)
+    litter_gdf = litter_gdf.to_crs(epsg=3857)
+    litter_gdf['x'] = litter_gdf.apply(getPointCoords, geom='geometry', coord_type='x', axis=1) 
     litter_gdf['y'] = litter_gdf.apply(getPointCoords, geom='geometry', coord_type='y', axis=1)
 
-    # Calculate x and y coordinates of the non-critical bins points
-    non_critical_bins['x'] = non_critical_bins.apply(getPointCoords, geom='geometry', coord_type='x', axis=1)
-    non_critical_bins['y'] = non_critical_bins.apply(getPointCoords, geom='geometry', coord_type='y', axis=1)
- 
-    # Calculate x and y coordinates of the critical bins points
-    critical_bins['x'] = critical_bins.apply(getPointCoords, geom='geometry', coord_type='x', axis=1)
-    critical_bins['y'] = critical_bins.apply(getPointCoords, geom='geometry', coord_type='y', axis=1)
-
-    # Get the Polygon x and y coordinates of the bins' buffers
-    bins_gdf['x'] = bins_gdf.apply(getPolyCoords, geom='buffer', coord_type='x', axis=1)
-    bins_gdf['y'] = bins_gdf.apply(getPolyCoords, geom='buffer', coord_type='y', axis=1)
-
+    # Calculate x and y coordinates of bins points
+    bins_gdf = bins_gdf.to_crs(epsg=3857)
+    bins_gdf['x'] = bins_gdf.apply(getPointCoords, geom='geom', coord_type='x', axis=1) 
+    bins_gdf['y'] = bins_gdf.apply(getPointCoords, geom='geom', coord_type='y', axis=1)
+    
     # Make a copy, drop the geometry column and create ColumnDataSource referring to litter points
     litter_df = litter_gdf.drop('geometry', axis=1).copy()
     littersource = ColumnDataSource(litter_df)
 
-    # Make a copy, drop the geometry column and create ColumnDataSource referring to non-critical bins points
-    ncbins_df = non_critical_bins.drop('geometry', axis=1).copy()
-    ncbinssource = ColumnDataSource(ncbins_df)
+    bins_df = bins_gdf.drop('geom', axis=1).copy()
+    binssource = ColumnDataSource(bins_df)
 
-    # Make a copy, drop the geometry column and create ColumnDataSource referring to critical bins points
-    cbins_df = critical_bins.drop('geometry', axis=1).copy()
-    cbinssource = ColumnDataSource(cbins_df)
-
-    # Make a copy, drop the geometry column and create ColumnDataSource referring to bins' buffers
-    binsbuffer_df = bins_gdf.drop('buffer', axis=1).copy()
-    binsbuffersource = ColumnDataSource(binsbuffer_df)
-	
-    #ADDING TOOLTIPS TO SHOW INFORMATION ABOUT LITTER POINT
-    TOOLTIPS = [('Date', '@Date_of_creation'), ('Time', '@Time_of_creation'), ('Lytter type', '@Lytter_type'),('Quantity', '@Quantity'), ('Type of infrastructure', '@Type_of_infrastructure'), ('Comment', '@Comment'), ('Photo', '@Photo')]
-
+    #Map with litter
     #CREATE THE MAP PLOT
-    # Initialize our figure
-    p = figure(x_axis_type="mercator",y_axis_type="mercator",tooltips=TOOLTIPS, tools="pan,wheel_zoom,box_zoom,reset,lasso_select,tap", active_drag="lasso_select")
-    #add basemap tile
-    p.add_tile(get_provider(Vendors.CARTODBPOSITRON))
+    # define range bounds supplied in web mercator coordinates epsg=3857 retrieving them from longitude and latitude
+    p1 = figure(x_range=((litter_gdf.x.min()-10), (litter_gdf.x.max()+10)), y_range=((litter_gdf.y.min()-10), (litter_gdf.y.max()+10)),
+           x_axis_type="mercator", y_axis_type="mercator",plot_width=700, plot_height=700,tools="pan,wheel_zoom,box_zoom,reset,save",title="Visualize clusters of litter points")
+    p1.axis.visible = False
+    p1.add_tile(get_provider(Vendors.OSM))
 
-    #add bins' buffers polygons(as brown points) 
-    p.patches('x', 'y', source=binsbuffersource, fill_color= "lightgray", fill_alpha=0.3, line_color="gray", line_width=0.05, legend_label='Bins buffers (500 m)')
+    #adding litter points
+    p1.circle('x', 'y', source=littersource, size=7, color="red",legend_label='Litter')
 
-    #add non-critical bins points(as black points) on top
-    p.circle('x', 'y', source=ncbinssource, color="black", radius=10, legend_label='Non-critical bins points')
+    #ADDING TOOLTIPS TO SHOW INFORMATION ABOUT LITTER POINT
+    hover = HoverTool(tooltips="""
+        <div>
+            <div>
+                <img
+                    src="@Photo" height="82" alt="@Photo" width="82"
+                    style="left; margin: 10px 20px 20px 10px;"
+                    border="2"
+                ></img>
+            </div>
+            <div>
+                <span style="font-size: 12px;">@Lytter_type</span>
+            </div>
+            <div>
+                <span style="font-size: 12px;">Quantity: @Quantity</span>
+            </div>
+            <div>
+                <span style="font-size: 12px;">Type of infrastructure: @Type_of_infrastructure</span>
+            </div>
+        </div>
+        """)
 
-    #add litter points(as brown x) on top
-    litterpoints = p.x('x', 'y', source=littersource, color="brown", legend_label='Litter')
+    p1.add_tools(hover)
 
-    #add critical bins points(as red points) on top
-    criticalbinpoints = p.circle('x', 'y', source=cbinssource, color="red", legend_label='Critical bins points',selection_color="yellow")
+	    #Add Labels and add to the plot layout
+    labels = LabelSet(x='x', y='y', text='ID', level="glyph",
+              x_offset=5, y_offset=5, render_mode='css')
+
+    p1.add_layout(labels)
 
     # Assign the legend to the bottom left
-    p.legend.location = 'bottom_left'
+    p1.legend.location = 'bottom_left'
 
     # Fill the legend background with the color 'lightgray'
-    p.legend.background_fill_color = 'lightgray'
+    p1.legend.background_fill_color = 'white'
 
-    output_file('interactive_map.html')
-    show(p)
-
-    #GO TO UPDATE BIN by clicking on it
-
-    def tap_function():
-        g.binpoint = source.selected.indices #I don't know what are the indices, I have to run it in jupyter to understand how to manipulate this data (we want the bin's id)
-        return url_for(update_bin)
 	
-    taptool = p.select(type=TapTool)[3] #select only critical bin points
-    taptool.renderers.append(criticalbinpoints) #or taptool.renderers= [points,]
-    taptool.callback = tap_function()
+    #CREATE THE MAP PLOT of bins
+    # define range bounds supplied in web mercator coordinates epsg=3857 retrieving them from longitude and latitude
 
-    #GO TO VISUALIZE RESULTS WITH DATA SELECTED WITH LASSO SELECT TOOL 
+    # range bounds supplied in web mercator coordinates epsg=3857
+    p2 = figure(x_range=((bins_gdf.x.min()-500), (bins_gdf.x.max()+500)), y_range=((bins_gdf.y.min()-500), (bins_gdf.y.max()+500)),
+           x_axis_type="mercator", y_axis_type="mercator",plot_width=700, plot_height=700,tools="pan,wheel_zoom,box_zoom,reset,save,tap", title='Visualize statistical analysis results and update bin')
+    p2.axis.visible = False
 
-    def lasso_function():
-        g.data = source.selected.indices #I don't know what are the indices, I have to run it in jupyter to understand how to manipulate this data (we want the df of selected litter)
-        analysis(data, None)
-    lassoselect = p.select(type=LassoSelectTool)[2] #select only litter points
-    lassoselect.renderers.append(litterpoints) #or lassoselect.renderers= [litterpoints,]
-    lassoselect.callback = lasso_function()
-    return
+    #ADDING TAPTOOL
+    url = url_for('visualize_results')
+    taptool = p2.select(type=TapTool)
+    taptool.callback = OpenURL(url=url)
+
+    p2.add_tile(get_provider(Vendors.OSM))
+
+    #add critical bins points(as black points) on top
+    p2.circle('x', 'y', source=binssource, color="black", size=7, legend_label='Bins points')
+
+    #ADDING TOOLTIPS TO SHOW INFORMATION ABOUT LITTER POINT
+    tooltips=("""
+            <div>
+                <div>
+                    <span style="font-size: 12px;">ID: @bin_id</span>
+                </div>
+                <div>
+                    <span style="font-size: 12px;">Click to see if infographic is needed!</span>
+                </div>
+            </div>
+            """)
+    hover = HoverTool(tooltips=tooltips)
+    p2.add_tools(hover)
+
+    #Add Labels and add to the plot layout
+    labels = LabelSet(x='x', y='y', text='ID', level="glyph",
+              x_offset=5, y_offset=5, render_mode='css')
+
+    p2.add_layout(labels)
+
+    # Assign the legend to the bottom left
+    p2.legend.location = 'bottom_left'
+
+    # Fill the legend background with the color 'lightgray'
+    p2.legend.background_fill_color = 'white'
+
+    output_file("Interactive_map.html")
+    layer = row(p1,p2)
+    show(layer)
+    
+    return 	
