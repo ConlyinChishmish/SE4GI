@@ -315,9 +315,9 @@ def new_bin():
         else :
             return render_template('new_bin.html')          
     else:
-        error = 'Only loggedin users can updaete bins!'
+        error = 'Only logged in users can updaete bins!'
         flash(error)
-        return redirect(url_for('interactive_map'))
+        return redirect(url_for('login'))
 
 threshold = np.array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
@@ -358,9 +358,9 @@ def map_function():
         conn.commit()
         city_boundaries = cityBoundary(res[1])
         im.interactive_map(city_boundaries)
-        return render_template('interactive_map.html')
+        return render_template('interactiveMap.html')
     else:
-        error = 'Only loggedin users can visualise map!'
+        error = 'Only logged in users can visualise map!'
         flash(error)
         return redirect(url_for('login'))
 
@@ -402,7 +402,7 @@ def create_image():
     else:
         error = 'Only loggedin users can visualise results!'
         flash(error)
-        return redirect(url_for('interactive_map'))
+        return redirect(url_for('login'))
     
     
 @app.route('/visualiseResults', methods=('GET', 'POST'))
@@ -412,7 +412,7 @@ def visualize_results():
     else:
         error = 'Only loggedin users can visualise results!'
         flash(error)
-        return redirect(url_for('interactive_map'))
+        return redirect(url_for('login'))
 
 #function that computes statistical analysis of litter data contained in a certain bin's buffer
 def statistycal_analysis(data_geodf,id):
@@ -510,7 +510,7 @@ def update_bin(id):
     else:
         error = 'Only loggedin users can updaete bins!'
         flash(error)
-        return redirect(url_for('interactive_map'))
+        return redirect(url_for('login'))
 
 #COMMENT SECTION	
 @app.route('/help_us')
