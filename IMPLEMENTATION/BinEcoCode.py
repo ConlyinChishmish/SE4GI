@@ -356,7 +356,7 @@ def query_by_area(area):
 @app.route('/interactive_map')          
 def map_function():  
     if load_logged_in_user():
-        im.interactive_map()
+        im.interactive_map(city_boundaries)
         return render_template('interactive_map.html')
     else:
         error = 'Only loggedin users can visualise map!'
