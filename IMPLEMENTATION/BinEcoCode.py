@@ -350,21 +350,55 @@ def query_by_area(area):
     
     return filtered_litter
 
-def visualize_results(results):
-	#array for the x axis
-	val = array(['low','medium','high','none'])
-	col = array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
-	plt.bar(val,results, color = col)
-	for i in range(4):
-		plt.axhline(y=threshold[i], color= col[i])
-	plt.ylim(0,1)
-	plt.title("Absolute frequency of quantiy and its threshold")
-	plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
-	
-	#save the plot in a image
-	plt.savefig('/static/plot_image.eps', format='eps')
-	
-	return render_template('visualize_results.html')
+@app.route('/create_image', methods=('GET', 'POST'))          
+def create_image():  
+    if load_logged_in_user():
+        if request.method == 'POST':
+            bin_id = request.form['bin_id']
+            error = None
+            if not bin_id:
+                error = 'Bin id is required!'
+            if error is not None:
+                flash(error)
+                return redirect(url_for('create_image'))
+            else: 
+                Bin = get_bin(bin_id)
+                area = Bin[7]          
+                data_geodf = query_by_area(area)
+                #if there is no litter point in bin's buffer flash error 
+                if data_geodf.empty:     
+                    error = "There is no litter point in bin's buffer!"
+                    flash(error)
+                    return redirect(url_for('indexlogged'))
+                results = statistycal_analysis(data_geodf,bin_id)
+                #array for the x axis
+                val = array(['low','medium','high','none'])
+                col = array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
+                plt.bar(val,results, color = col)
+                for i in range(4):
+                    plt.axhline(y=threshold[i], color= col[i])
+                plt.ylim(0,1)
+                plt.title("Absolute frequency of quantiy and its threshold")
+                plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+                #save the plot in a image
+                plt.savefig('/static/plot_image.eps', format='eps')
+                return redirect(url_for('visualise_results'))
+        else:
+            return render_template('create_image.html')
+    else:
+        error = 'Only loggedin users can visualise results!'
+        flash(error)
+        return redirect(url_for('interactive_map'))
+    
+    
+@app.route('/visualiseResults', methods=('GET', 'POST'))
+def visualize_results(): 
+    if load_logged_in_user():
+        return render_template('visualiseResults.html')
+    else:
+        error = 'Only loggedin users can visualise results!'
+        flash(error)
+        return redirect(url_for('interactive_map'))
 
 #function that computes statistical analysis of litter data contained in a certain bin's buffer
 def statistycal_analysis(data_geodf,id):
@@ -431,10 +465,6 @@ def get_bin(id):
     cur.close()
     if Bin is None:
         abort(404, "Bin id {0} doesn't exist.".format(id))
-
-    if Bin[1] != g.user[0]:
-        abort(403)  #access is forbidden 
-
     return Bin
 
 # update bin
