@@ -9,7 +9,7 @@ import datetime
 from sqlalchemy import create_engine
 
 from bokeh.plotting import figure, show, output_file
-from bokeh.models import ColumnDataSource, LabelSet, HoverTool
+from bokeh.models import ColumnDataSource, LabelSet, HoverTool, OpenURL
 from bokeh.models.tools import TapTool
 from bokeh.tile_providers import get_provider, Vendors
 from bokeh.io import output_notebook, show
@@ -129,8 +129,12 @@ def interactive_map(city_boundaries):
             <div>
                 <span style="font-size: 12px;">Type of infrastructure: @Type_of_infrastructure</span>
             </div>
+            <div>
+                <span style="font-size: 12px;">Location</span>
+                <span style="font-size: 10px; color: #696;">(@Longitude, @Latitude)</span>
+            </div>
         </div>
-        """)
+    """)
 
     p1.add_tools(hover)
 
@@ -158,7 +162,7 @@ def interactive_map(city_boundaries):
     #ADDING TAPTOOL
     
     taptool = p2.select(type=TapTool)
-    taptool.callback = redirect(url_for('create_image'))
+    taptool.callback = OpenURL(url = url_for('create_image'))
 
     p2.add_tile(get_provider(Vendors.OSM))
 
@@ -173,6 +177,10 @@ def interactive_map(city_boundaries):
                 </div>
                 <div>
                     <span style="font-size: 12px;">Click to see if infographic is needed!</span>
+                </div>
+                <div>
+                <span style="font-size: 12px;">Location</span>
+                <span style="font-size: 10px; color: #696;">(@lon, @lat)</span>
                 </div>
             </div>
             """)
