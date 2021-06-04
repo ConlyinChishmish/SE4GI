@@ -91,10 +91,9 @@ def cityBoundary(locality):
     boundary_gdf=explode(boundary_gdf)
     #searching for boundaries referring to PA
     query_search ='short_name == "Cairns"'
-    global city_boundaries 
     city_boundaries = boundary_gdf.query(query_search)
     city_boundaries = city_boundaries.reset_index(drop=True)
-    return
+    return city_boundaries 
  
 #creating the function for computing buffer around bins
 def geodesic_point_buffer(lat, lon, radius):
@@ -200,8 +199,7 @@ def register():
             cur.close()
             conn.commit()
 	
-            binsTable(municipality) 
-            cityBoundary(municipality)
+            binsTable(municipality)
             return redirect(url_for('login'))
         flash(error)
 
@@ -320,10 +318,7 @@ def new_bin():
         error = 'Only loggedin users can updaete bins!'
         flash(error)
         return redirect(url_for('interactive_map'))
-    
-    
-#global variable constant values   
-global threshold 
+
 threshold = np.array([0.6,0.5,0.3,0.2]) #threshold for low-medium-high-none
 #for none, if none absolute frequency overcomes the threshold (>=0.2) is not necessary to put a bin/infographic
 #for low-medium-high if frequencies overcome the corresponding thresholds a bin/infographic has to be put 
@@ -353,9 +348,18 @@ def query_by_area(area):
     
     return filtered_litter
 
-@app.route('/interactive_map')          
+@app.route('/interactive_map')         
 def map_function():  
     if load_logged_in_user():
+	conn = get_dbConn()
+        cur = conn.cursor()
+        cur.execute(
+            'SELECT municipality FROM pa_user WHERE postal_code = %s', (g.user[0],)
+        )
+        municipality = cur.fetchone()
+        cur.close()
+        conn.commit()
+	city_boundaries = cityBoundary(municipality)
         im.interactive_map(city_boundaries)
         return render_template('interactive_map.html')
     else:
