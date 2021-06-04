@@ -45,6 +45,21 @@ def query_by_area(area):
     
     return filtered_litter
 
+# query by temporal window
+def query_temp():
+    engine = customized_engine()
+    gdf_litt = gpd.GeoDataFrame.from_postgis('litter', engine, geom_col='geometry')
+    # cast on the data column
+    gdf_litt['Date_of_creation'] = pd.to_datetime(gdf_litt['Date_of_creation'], format='%d/%m/%Y')
+    # find the last entry in the dataframe
+    last_date = max(gdf_litt['Date_of_creation'])
+    # compute the 30 days starting from the last entry date
+    start_date= last_date - datetime.timedelta(30)
+    # filter the data of litter with the date
+    filtered_litter = gdf_litt[(gdf_litt.Date_of_creation >= start_date) & (gdf_litt.Date_of_creation <= last_date)]
+    
+    return filtered_litter
+
 def interactive_map(city_boundaries):
 	
     engine = customized_engine()
