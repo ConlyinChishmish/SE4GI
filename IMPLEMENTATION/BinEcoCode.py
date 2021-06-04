@@ -31,6 +31,7 @@ import osmnx as ox
 import matplotlib.pyplot as plt
 import datetime 
 
+import InteractiveMap as im
 
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
@@ -351,6 +352,16 @@ def query_by_area(area):
     filtered_litter = gdf_litt[gdf_litt.geometry.within(area)]
     
     return filtered_litter
+
+@app.route('/interactive_map', methods=('GET'))          
+def map_function():  
+    if load_logged_in_user():
+        im.interactive_map()
+        return render_template('interactive_map.html')
+    else:
+        error = 'Only loggedin users can visualise map!'
+        flash(error)
+        return redirect(url_for('login'))
 
 @app.route('/create_image', methods=('GET', 'POST'))          
 def create_image():  
