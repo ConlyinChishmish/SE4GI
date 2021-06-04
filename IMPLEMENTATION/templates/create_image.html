@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Preparing analysis{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+    <p> Insert the Id of the bin selected <p>
+  <form method="post">
+    <label for="bin_id">bin_id</label>
+    <input name="bin_id" id="bin_id" value="{{ request.form['bin_id'] }}" required>
+    <input type="submit" value="Save">
+  </form>
+{% endblock %}
+
+

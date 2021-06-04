@@ -2,18 +2,19 @@
 
 {% block header %}
 
-  <h1>{% block title %}BinEco-Map{% endblock %}</h1>
+  <h1>{% block title %}BinEco-Analysis{% endblock %}</h1>
   {% if g.user %}
     <li><span>{{ g.user['user_name'] }}</span>
     <form method="post">
-     <a class = "action" href="{{ url_for('update_bin') }}">interactive map</a>  
+     <a class = "action" href="{{ url_for('update_bin') }}">Update Bin</a>  
     
   {% endif %}
 {% endblock %}
 
 {% block content %}
 <body bgcolor= "#d3d3d3">
-<h2>how to use the interactive map</h2>
+<img src="/static/plot_image.eps"
+  style="float:centre;margin: 10px" height="430" width="600">
   
 </div>
 </label> 
