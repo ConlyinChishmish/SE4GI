@@ -10,12 +10,13 @@ from psycopg2 import (
         connect
 )
 
+from shapely import geometry
 from shapely.geometry import Point
 
 import numpy as np
 from numpy import array
 
-#from shapely import geometry
+
 import pyproj
 from shapely.ops import transform
 from functools import partial
