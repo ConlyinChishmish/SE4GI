@@ -1,8 +1,10 @@
 from flask import (
-    Flask, url_for
+    url_for
 )
 
 import geopandas as gpd
+import pandas as pd
+import datetime
 
 from sqlalchemy import create_engine
 
@@ -72,7 +74,7 @@ def interactive_map(city_boundaries):
 
     
     litter_gdf = gpd.GeoDataFrame(columns=original_litter_gdf.columns)
-    for i,row in city_boundaries.iterrows():
+    for i,r in city_boundaries.iterrows():
         area = city_boundaries.loc[i,'geometry']
         filtered_litter_gdf = query_by_area(area)
         litter_gdf = litter_gdf.append(filtered_litter_gdf, ignore_index=True)
