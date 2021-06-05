@@ -363,15 +363,15 @@ def map_function():
         error = 'Only logged in users can visualise map!'
         flash(error)
         return redirect(url_for('login'))
-
+bin_id = None
 @app.route('/create_image', methods=('GET', 'POST'))          
 def create_image():  
     if load_logged_in_user():
         if request.method == 'POST':
-            bin_id = request.form['bin_id']
-            id_bin= int(bin_id)
+            id_bin= request.form['bin_id']
+            id_bin= int(id_bin)-1
             error = None
-            if not id_bin:
+            if not id:
                 error = 'Bin id is required!'
             if error is not None:
                 flash(error)
@@ -396,7 +396,7 @@ def create_image():
                     plt.title("Absolute frequency of quantiy and its threshold")
                     plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
                     #save the plot in a image
-                    plt.savefig('/static/plot_image.eps', format='eps')
+                    plt.savefig("histo.png")
                     return redirect(url_for('visualise_results'))
         else:
             return render_template('create_image.html')
@@ -405,9 +405,8 @@ def create_image():
         flash(error)
         return redirect(url_for('login'))
     
-    
 @app.route('/visualiseResults', methods=('GET', 'POST'))
-def visualize_results(): 
+def visualise_results(): 
     if load_logged_in_user():
         return render_template('visualiseResults.html')
     else:
@@ -470,17 +469,17 @@ def statistycal_analysis(data_geodf,id):
 def get_bin(id):
     engine = customized_engine()
     gdf_bin = gpd.GeoDataFrame.from_postgis('bins', engine, geom_col='buffer')
-    area = gdf_bin.at[id,'buffer']
+    area = gdf_bin.loc[id,'buffer']
     if area is None:
         abort(404, "Bin id {0} doesn't exist.".format(id))
     return area
 
 # update bin
-@app.route('/<int:id>/update_bin', methods=('GET', 'POST'))
-def update_bin(id):
+@app.route('/update_bin', methods=('GET', 'POST'))
+def update_bin():
     if load_logged_in_user():
-        Bin= get_bin(id)
         if request.method == 'POST' :
+            bin_id = request.form['bin_id']
             infographic= request.form['infographic']
             error = None
             
@@ -492,15 +491,15 @@ def update_bin(id):
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
-                cur.execute('UPDATE bins SET infografic = %s'
+                cur.execute('UPDATE bins SET infographic = %s'
                                'WHERE bin_id = %s', 
-                               (infographic, id)
+                               (infographic, bin_id)
                                )
                 cur.close()
                 conn.commit()
-                return redirect(url_for('index'))
+                return redirect(url_for('visualise_results'))
         else :
-            return render_template('update_bin.html', Bin = Bin)
+            return render_template('updateBin.html')
     else:
         error = 'Only loggedin users can updaete bins!'
         flash(error)

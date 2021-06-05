@@ -6,14 +6,14 @@
   {% if g.user %}
     <li><span>{{ g.user['user_name'] }}</span>
     <form method="post">
-     <a class = "action" href="{{ url_for('update_bin') }}">Update Bin</a>  
+     <a class = "action" href="{{ url_for('update_bin', id=Bin_id)}}">Update Bin</a>  
     
   {% endif %}
 {% endblock %}
 
 {% block content %}
 <body bgcolor= "#d3d3d3">
-<img src="/static/plot_image.eps"
+<img src="/histo.png"
   style="float:centre;margin: 10px" height="430" width="600">
   
 </div>

@@ -1,30 +1,17 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 31 21:51:44 2021
-
-@author: arya
-"""
-
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 31 20:06:55 2021
-
-@author: arya
-"""
-
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Edit "{{ bin_id }}"{% endblock %}</h1>
+  <h1>{% block title %}Edit{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-<body style="background-image: url('static/pete-willis-7XjahX2diCA-unsplash.jpg');"></body>
+<body style="background-image: url('static/recycle_tree1.jpg');""></body>
   <form method="post">
      <label for="bin_id">Bib ID</label>
     <input name="bin_id" id="bin_id" value="{{ request.form['bin_id']}}" required>
-   
-    <input name="infographic" id= "infographic"   
+   <label for="bin_id">Infographic</label>
+    <input name="infographic" id= "infographic" value="{{ request.form['bin_id']}}" required>
+    
      <input type="submit" value="Save">
   </form>
   <hr>
