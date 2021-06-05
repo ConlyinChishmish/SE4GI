@@ -12,6 +12,7 @@ from psycopg2 import (
 
 from sqlalchemy import create_engine 
 
+import shapely.wkt
 from shapely import geometry
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
@@ -311,6 +312,7 @@ def new_bin():
                         )
                 cur.close()
                 conn.commit()
+                conn.close()
                 return redirect(url_for('index'))
         else :
             return render_template('new_bin.html')          
@@ -363,15 +365,15 @@ def map_function():
         error = 'Only logged in users can visualise map!'
         flash(error)
         return redirect(url_for('login'))
-bin_id = None
+
 @app.route('/create_image', methods=('GET', 'POST'))          
 def create_image():  
     if load_logged_in_user():
         if request.method == 'POST':
-            id_bin= request.form['bin_id']
-            id_bin= int(id_bin)-1
+            id_bin = request.form['bin_id']
+            id_bin= int(id_bin)
             error = None
-            if not id:
+            if not id_bin:
                 error = 'Bin id is required!'
             if error is not None:
                 flash(error)
@@ -396,7 +398,7 @@ def create_image():
                     plt.title("Absolute frequency of quantiy and its threshold")
                     plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
                     #save the plot in a image
-                    plt.savefig("histo.png")
+                    plt.savefig("static/histo.png")
                     return redirect(url_for('visualise_results'))
         else:
             return render_template('create_image.html')
@@ -404,7 +406,7 @@ def create_image():
         error = 'Only loggedin users can visualise results!'
         flash(error)
         return redirect(url_for('login'))
-    
+       
 @app.route('/visualiseResults', methods=('GET', 'POST'))
 def visualise_results(): 
     if load_logged_in_user():
@@ -415,7 +417,7 @@ def visualise_results():
         return redirect(url_for('login'))
 
 #function that computes statistical analysis of litter data contained in a certain bin's buffer
-def statistycal_analysis(data_geodf,id):
+def statistycal_analysis(data_geodf,id_bin):
     #if there is no litter point in bin's buffer return 
     if data_geodf.empty:       
         return                                                                                                                           
@@ -463,16 +465,23 @@ def statistycal_analysis(data_geodf,id):
     absolute_frequency_df = frequency_df.loc[:, 'Absolute_frequency']
     absolute_frequency_array = np.array(absolute_frequency_df).reshape(-1)
     return absolute_frequency_array 
-
-
+    
 # find bin by id
-def get_bin(id):
-    engine = customized_engine()
-    gdf_bin = gpd.GeoDataFrame.from_postgis('bins', engine, geom_col='buffer')
-    area = gdf_bin.loc[id,'buffer']
-    if area is None:
-        abort(404, "Bin id {0} doesn't exist.".format(id))
-    return area
+def get_bin(id_bin):
+    conn = get_dbConn()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM bins WHERE bin_id = %s', (id_bin,))
+    bin_row = cur.fetchone()
+    cur.close()
+    conn.commit()
+    if bin_row is None:
+        abort(404, "Bin id {0} doesn't exist.".format(id_bin))
+    else:
+        area = bin_row[7]  
+        area = shapely.wkb.loads(area, hex=True)
+        cur.close()
+        conn.commit()   
+        return area
 
 # update bin
 @app.route('/update_bin', methods=('GET', 'POST'))
@@ -484,15 +493,14 @@ def update_bin():
             error = None
             
             if not infographic :
-                error = 'infographic is required is required!'
+                error = 'infographic is required!'
             if error is not None :
                 flash(error)
                 return redirect(url_for('update_bin'))
             else : 
                 conn = get_dbConn()
                 cur = conn.cursor()
-                cur.execute('UPDATE bins SET infographic = %s'
-                               'WHERE bin_id = %s', 
+                cur.execute('UPDATE bins SET infographic = %s WHERE bin_id = %s', 
                                (infographic, bin_id)
                                )
                 cur.close()
@@ -501,7 +509,7 @@ def update_bin():
         else :
             return render_template('updateBin.html')
     else:
-        error = 'Only loggedin users can updaete bins!'
+        error = 'Only loggedin users can update bins!'
         flash(error)
         return redirect(url_for('login'))
 
@@ -551,19 +559,19 @@ def create_comment():
         flash(error)
         return redirect(url_for('login'))
    
-def get_comment(id):
+def get_comment(id_bin):
     conn = get_dbConn()
     cur = conn.cursor()
     cur.execute(
         """SELECT *
            FROM comments
            WHERE comments.comment_id = %s""",
-        (id,)
+        (id_bin,)
     )
     comment = cur.fetchone()
     cur.close()
     if comment is None:
-        abort(404, "Comment id {0} doesn't exist.".format(id))
+        abort(404, "Comment id {0} doesn't exist.".format(id_bin))
 
     if comment[1] != g.user[0]:
         abort(403)  #access is forbidden 
@@ -571,9 +579,9 @@ def get_comment(id):
     return comment
 
 @app.route('/<int:id>/updateComment', methods=('GET', 'POST'))
-def update_comment(id):
+def update_comment(id_bin):
     if load_logged_in_user():
-        comment = get_comment(id)
+        comment = get_comment(id_bin)
         if request.method == 'POST' :
             title = request.form['title']
             body = request.form['body']
@@ -589,7 +597,7 @@ def update_comment(id):
                 cur = conn.cursor()
                 cur.execute('UPDATE comments SET title = %s, body = %s'
                                'WHERE comment_id = %s', 
-                               (title, body, id)
+                               (title, body, id_bin)
                                )
                 cur.close()
                 conn.commit()
@@ -602,10 +610,10 @@ def update_comment(id):
         return redirect(url_for('login'))
 
 @app.route('/<int:id>/deleteComment', methods=('POST',))
-def delete_comment(id):
+def delete_comment(id_bin):
     conn = get_dbConn()                
     cur = conn.cursor()
-    cur.execute('DELETE FROM comments WHERE comment_id = %s', (id,))
+    cur.execute('DELETE FROM comments WHERE comment_id = %s', (id_bin,))
     conn.commit()
     return redirect(url_for('help_us'))        
         
