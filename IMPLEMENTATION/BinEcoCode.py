@@ -13,13 +13,11 @@ from psycopg2 import (
 from sqlalchemy import create_engine 
 
 import shapely.wkt
-from shapely import geometry
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 from shapely.geometry.multipolygon import MultiPolygon  
 
 import numpy as np
-from numpy import array
 
 
 import pyproj
@@ -35,9 +33,10 @@ import datetime
 
 import InteractiveMap as im
 
-from bokeh.plotting import figure
-from bokeh.io import output_notebook, export_png
-from bokeh.models import Span, ColumnDataSource
+from bokeh.plotting import figure, output_file, show
+from bokeh.io import output_notebook
+from bokeh.models import Span, ColumnDataSource,Button, CustomJS
+from bokeh.layouts import column
 output_notebook()
 
 # Create the application instance
@@ -398,7 +397,7 @@ def create_image():
                     colors = ['lightsteelblue', 'gold', 'saddlebrown', 'black']
                     source = ColumnDataSource(data=dict(quantity=quantity, results=results, color=colors))
 
-                    p = figure(x_range=quantity, y_range=(0,1), title="Absolute frequency of quantity and its thresholds",toolbar_location=None)
+                    p = figure(x_range=quantity, y_range=(0,1), title="Absolute frequency of quantity and its thresholds",toolbar_location=None,plot_width=650, plot_height=650)
 
                     p.vbar(x='quantity', top='results', width=0.6, source=source, legend_field="quantity", line_color='color', fill_color='color')
 
@@ -426,19 +425,19 @@ def create_image():
                     p.yaxis.axis_label = "Absolute frequency"
                     p.yaxis.ticker = [threshold[0], threshold[1], threshold[2], threshold[3]]
                     
-                    export_png(p, filename="static/bar_plot.png")
-                    return redirect(url_for('visualise_results'))
+                    b = Button(label='Update bin') 
+                    
+                    b.js_on_click(CustomJS(args=dict(urls=['http://127.0.0.1:5000/update_bin']),
+                       code="""urls.forEach(url => window.open(url))"""))
+                    
+                    output_file('templates/bar_plot.html')
+                    
+                    layer = column(b , p)
+                    show(layer)
+                    
+                    return
         else:
             return render_template('create_image.html')
-    else:
-        error = 'Only loggedin users can visualise results!'
-        flash(error)
-        return redirect(url_for('login'))
-       
-@app.route('/visualiseResults', methods=('GET', 'POST'))
-def visualise_results(): 
-    if load_logged_in_user():
-        return render_template('visualiseResults.html')
     else:
         error = 'Only loggedin users can visualise results!'
         flash(error)
@@ -534,7 +533,7 @@ def update_bin():
                                (bin_id,))
                 cur.close()
                 conn.commit()
-                return redirect(url_for('visualise_results'))
+                return redirect(url_for('index'))
         else :
             return render_template('updateBin.html')
     else:

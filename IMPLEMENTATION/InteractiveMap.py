@@ -1,5 +1,5 @@
 from flask import (
-    Flask, render_template, request, redirect, flash, url_for, session, g
+    g
 )
 from psycopg2 import (
         connect
@@ -15,7 +15,7 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.models import ColumnDataSource, LabelSet, HoverTool, OpenURL
 from bokeh.models.tools import TapTool
 from bokeh.tile_providers import get_provider, Vendors
-from bokeh.io import output_notebook, show
+from bokeh.io import output_notebook
 from bokeh.layouts import row
 output_notebook ()
 
