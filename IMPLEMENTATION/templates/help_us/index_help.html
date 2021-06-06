@@ -4,7 +4,7 @@
 
   <h1>{% block title %}BinEco-Comments{% endblock %}</h1>
   {% if g.user %}
-    <li><span>{{ g.user['user_name'] }}</span>
+    <span>{{ g.user['user_name'] }}</span>
     <a class = "action" href="/createComment"> help_us improve!</a>
   {% endif %}
 {% endblock %}

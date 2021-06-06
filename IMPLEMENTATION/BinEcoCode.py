@@ -30,9 +30,15 @@ import pandas as pd
 import geopandas as gpd
 import osmnx as ox
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import datetime 
 
 import InteractiveMap as im
+
+from bokeh.plotting import figure
+from bokeh.io import output_notebook, export_png
+from bokeh.models import Span, ColumnDataSource
+output_notebook()
 
 # Create the application instance
 app = Flask(__name__, template_folder="templates")
@@ -125,7 +131,7 @@ def binsTable(locality):   #call this function in registration if it is made cor
 
     #adding buffer attribute
     for i, row in bins_gdf.iterrows():
-        bins_gdf.loc[i, 'buffer'] = geodesic_point_buffer(bins_gdf.loc[i, 'lat'], bins_gdf.loc[i, 'lon'], 500.0)
+        bins_gdf.loc[i, 'buffer'] = geodesic_point_buffer(bins_gdf.loc[i, 'lat'], bins_gdf.loc[i, 'lon'], 200.0)
 
     #setup db connection 
     engine = customized_engine()
@@ -280,7 +286,7 @@ def new_bin():
             lat = request.form['lat']
         
             geom = Point(float(lon), float(lat))
-            buffer = geodesic_point_buffer(lat, lon, 500.0)
+            buffer = geodesic_point_buffer(lat, lon, 200.0)
             error = None
        
             # check if the data inserted are correct
@@ -347,7 +353,7 @@ def query_by_area(area):
     
     return filtered_litter
 
-@app.route('/interactive_map')         
+@app.route('/map_info')         
 def map_function():  
     if load_logged_in_user():
         conn = get_dbConn()
@@ -360,7 +366,7 @@ def map_function():
         conn.commit()
         city_boundaries = cityBoundary(res[1])
         im.interactive_map(city_boundaries)
-        return render_template('interactive_map.html')
+        return render_template('map_info.html')
     else:
         error = 'Only logged in users can visualise map!'
         flash(error)
@@ -388,17 +394,39 @@ def create_image():
                     return redirect(url_for('index'))
                 else:
                     results = statistycal_analysis(data_geodf,id_bin)
-                    #array for the x axis
-                    val = array(['low','medium','high','none'])
-                    col = array(['lightsteelblue', 'gold', 'saddlebrown', 'k'])
-                    plt.bar(val,results, color = col)
-                    for i in range(4):
-                        plt.axhline(y=threshold[i], color= col[i])
-                    plt.ylim(0,1)
-                    plt.title("Absolute frequency of quantiy and its threshold")
-                    plt.legend(val,title='Legend', bbox_to_anchor=(1.05, 1), loc='upper left')
-                    #save the plot in a image
-                    plt.savefig("static/histo.png")
+                    quantity = ['low','medium','high','none']
+                    colors = ['lightsteelblue', 'gold', 'saddlebrown', 'black']
+                    source = ColumnDataSource(data=dict(quantity=quantity, results=results, color=colors))
+
+                    p = figure(x_range=quantity, y_range=(0,1), title="Absolute frequency of quantity and its thresholds",toolbar_location=None)
+
+                    p.vbar(x='quantity', top='results', width=0.6, source=source, legend_field="quantity", line_color='color', fill_color='color')
+
+                    p.xgrid.grid_line_color = None
+                    p.legend.orientation = "horizontal"
+                    p.legend.location = "top_center"
+
+                    hline1 = Span(location=threshold[0], line_color='lightsteelblue', line_width=3)
+                    hline2 = Span(location=threshold[1], line_color='gold', line_width=3)
+                    hline3 = Span(location=threshold[2], line_color='saddlebrown', line_width=3)
+                    hline4 = Span(location=threshold[3], line_color='black', line_width=3)
+                    p.renderers.extend([hline1])
+                    p.renderers.extend([hline2])
+                    p.renderers.extend([hline3])
+                    p.renderers.extend([hline4])
+                    p.legend.orientation = "vertical"
+                    p.legend.location = "top_left"
+                    p.xaxis.major_label_orientation = 1.2
+                    p.xgrid.visible = False
+                    p.ygrid.visible = False
+                    p.outline_line_width = 3
+                    p.outline_line_alpha = 0.3
+                    p.outline_line_color = "black"
+                    p.xaxis.axis_label = "Quantity"
+                    p.yaxis.axis_label = "Absolute frequency"
+                    p.yaxis.ticker = [threshold[0], threshold[1], threshold[2], threshold[3]]
+                    
+                    export_png(p, filename="static/bar_plot.png")
                     return redirect(url_for('visualise_results'))
         else:
             return render_template('create_image.html')
@@ -501,8 +529,9 @@ def update_bin():
                 conn = get_dbConn()
                 cur = conn.cursor()
                 cur.execute('UPDATE bins SET infographic = %s WHERE bin_id = %s', 
-                               (infographic, bin_id)
-                               )
+                               (infographic, bin_id))
+                cur.execute('UPDATE bins SET infographic_date = NOW() WHERE bin_id = %s', 
+                               (bin_id,))
                 cur.close()
                 conn.commit()
                 return redirect(url_for('visualise_results'))
@@ -559,19 +588,19 @@ def create_comment():
         flash(error)
         return redirect(url_for('login'))
    
-def get_comment(id_bin):
+def get_comment(id):
     conn = get_dbConn()
     cur = conn.cursor()
     cur.execute(
         """SELECT *
            FROM comments
            WHERE comments.comment_id = %s""",
-        (id_bin,)
+        (id,)
     )
     comment = cur.fetchone()
     cur.close()
     if comment is None:
-        abort(404, "Comment id {0} doesn't exist.".format(id_bin))
+        abort(404, "Comment id {0} doesn't exist.".format(id))
 
     if comment[1] != g.user[0]:
         abort(403)  #access is forbidden 
@@ -579,9 +608,9 @@ def get_comment(id_bin):
     return comment
 
 @app.route('/<int:id>/updateComment', methods=('GET', 'POST'))
-def update_comment(id_bin):
+def update_comment(id):
     if load_logged_in_user():
-        comment = get_comment(id_bin)
+        comment = get_comment(id)
         if request.method == 'POST' :
             title = request.form['title']
             body = request.form['body']
@@ -597,7 +626,7 @@ def update_comment(id_bin):
                 cur = conn.cursor()
                 cur.execute('UPDATE comments SET title = %s, body = %s'
                                'WHERE comment_id = %s', 
-                               (title, body, id_bin)
+                               (title, body, id)
                                )
                 cur.close()
                 conn.commit()
@@ -610,10 +639,10 @@ def update_comment(id_bin):
         return redirect(url_for('login'))
 
 @app.route('/<int:id>/deleteComment', methods=('POST',))
-def delete_comment(id_bin):
+def delete_comment(id):
     conn = get_dbConn()                
     cur = conn.cursor()
-    cur.execute('DELETE FROM comments WHERE comment_id = %s', (id_bin,))
+    cur.execute('DELETE FROM comments WHERE comment_id = %s', (id,))
     conn.commit()
     return redirect(url_for('help_us'))        
         

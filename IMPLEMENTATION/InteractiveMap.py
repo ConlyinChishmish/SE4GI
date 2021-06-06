@@ -332,10 +332,10 @@ def interactive_map(city_boundaries):
     # Assign the legend to the bottom left
     p2.legend.location = 'bottom_left'
 
-    # Fill the legend background with the color 'lightgray'
+    # Fill the legend background with the color 'white'
     p2.legend.background_fill_color = 'white'
 
-    output_file("templates/Interactive_map.html")
+    output_file("templates/InteractiveMap.html")
     layer = row(p1,p2)
     show(layer)
     
