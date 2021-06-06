@@ -337,6 +337,5 @@ def interactive_map(city_boundaries):
 
     output_file("templates/InteractiveMap.html")
     layer = row(p1,p2)
-    show(layer)
     
-    return 	
+    return show(layer)

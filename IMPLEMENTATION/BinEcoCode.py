@@ -371,6 +371,47 @@ def map_function():
         flash(error)
         return redirect(url_for('login'))
 
+def bar_plot(results):
+    quantity = ['low','medium','high','none']
+    colors = ['lightsteelblue', 'gold', 'saddlebrown', 'black']
+    source = ColumnDataSource(data=dict(quantity=quantity, results=results, color=colors))
+
+    p = figure(x_range=quantity, y_range=(0,1), title="Absolute frequency of quantity and its thresholds",toolbar_location=None,plot_width=650, plot_height=650)
+
+    p.vbar(x='quantity', top='results', width=0.6, source=source, legend_field="quantity", line_color='color', fill_color='color')
+
+    p.xgrid.grid_line_color = None
+    p.legend.orientation = "horizontal"
+    p.legend.location = "top_center"
+
+    hline1 = Span(location=threshold[0], line_color='lightsteelblue', line_width=3)
+    hline2 = Span(location=threshold[1], line_color='gold', line_width=3)
+    hline3 = Span(location=threshold[2], line_color='saddlebrown', line_width=3)
+    hline4 = Span(location=threshold[3], line_color='black', line_width=3)
+    p.renderers.extend([hline1])
+    p.renderers.extend([hline2])
+    p.renderers.extend([hline3])
+    p.renderers.extend([hline4])
+    p.legend.orientation = "vertical"
+    p.legend.location = "top_left"
+    p.xaxis.major_label_orientation = 1.2
+    p.xgrid.visible = False
+    p.ygrid.visible = False
+    p.outline_line_width = 3
+    p.outline_line_alpha = 0.3
+    p.outline_line_color = "black"
+    p.xaxis.axis_label = "Quantity"
+    p.yaxis.axis_label = "Absolute frequency"
+    p.yaxis.ticker = [threshold[0], threshold[1], threshold[2], threshold[3]]
+                    
+    b = Button(label='Update bin') 
+    b.js_on_click(CustomJS(args=dict(urls=['http://127.0.0.1:5000/update_bin']),code="""urls.forEach(url => window.open(url))"""))
+                    
+    output_file('templates/bar_plot.html')
+                    
+    layer = column(b , p)
+    return layer
+
 @app.route('/create_image', methods=('GET', 'POST'))          
 def create_image():  
     if load_logged_in_user():
@@ -393,56 +434,15 @@ def create_image():
                     return redirect(url_for('index'))
                 else:
                     results = statistycal_analysis(data_geodf,id_bin)
-                    quantity = ['low','medium','high','none']
-                    colors = ['lightsteelblue', 'gold', 'saddlebrown', 'black']
-                    source = ColumnDataSource(data=dict(quantity=quantity, results=results, color=colors))
-
-                    p = figure(x_range=quantity, y_range=(0,1), title="Absolute frequency of quantity and its thresholds",toolbar_location=None,plot_width=650, plot_height=650)
-
-                    p.vbar(x='quantity', top='results', width=0.6, source=source, legend_field="quantity", line_color='color', fill_color='color')
-
-                    p.xgrid.grid_line_color = None
-                    p.legend.orientation = "horizontal"
-                    p.legend.location = "top_center"
-
-                    hline1 = Span(location=threshold[0], line_color='lightsteelblue', line_width=3)
-                    hline2 = Span(location=threshold[1], line_color='gold', line_width=3)
-                    hline3 = Span(location=threshold[2], line_color='saddlebrown', line_width=3)
-                    hline4 = Span(location=threshold[3], line_color='black', line_width=3)
-                    p.renderers.extend([hline1])
-                    p.renderers.extend([hline2])
-                    p.renderers.extend([hline3])
-                    p.renderers.extend([hline4])
-                    p.legend.orientation = "vertical"
-                    p.legend.location = "top_left"
-                    p.xaxis.major_label_orientation = 1.2
-                    p.xgrid.visible = False
-                    p.ygrid.visible = False
-                    p.outline_line_width = 3
-                    p.outline_line_alpha = 0.3
-                    p.outline_line_color = "black"
-                    p.xaxis.axis_label = "Quantity"
-                    p.yaxis.axis_label = "Absolute frequency"
-                    p.yaxis.ticker = [threshold[0], threshold[1], threshold[2], threshold[3]]
-                    
-                    b = Button(label='Update bin') 
-                    
-                    b.js_on_click(CustomJS(args=dict(urls=['http://127.0.0.1:5000/update_bin']),
-                       code="""urls.forEach(url => window.open(url))"""))
-                    
-                    output_file('templates/bar_plot.html')
-                    
-                    layer = column(b , p)
-                    show(layer)
-                    
-                    return
+                    show(bar_plot(results))
+                    return render_template('bar_plot_info.html')
         else:
             return render_template('create_image.html')
     else:
         error = 'Only loggedin users can visualise results!'
         flash(error)
         return redirect(url_for('login'))
-
+        
 #function that computes statistical analysis of litter data contained in a certain bin's buffer
 def statistycal_analysis(data_geodf,id_bin):
     #if there is no litter point in bin's buffer return 
@@ -509,7 +509,7 @@ def get_bin(id_bin):
         cur.close()
         conn.commit()   
         return area
-
+    
 # update bin
 @app.route('/update_bin', methods=('GET', 'POST'))
 def update_bin():
