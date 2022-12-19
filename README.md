@@ -1,4 +1,6 @@
-# SE4GI- BinEco
+# *BinEco*
+# Don't waste your time, keep it clean!
+
 HOW TO USE IT
 1) You must have a postgreSQL-postGIS database
 2) You must have an anaconda environment in which install the following libraries:
